@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ReadTogether | Unir nos lectures</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- //////// HEADER ////////-->
+  <header class="header">
+
+    <!-- Titre de l'Application class="logo" : style.css -->
+    <div class="logo">
+      <h1>Together</h1>
+    </div>
+
+    <!-- Barre de navigation en haut à droite de l'écran class="header-right" : style.css -->
+    <nav class="header-right">
+      <button id="menuLogout" class="btn btn-danger" style="display:none">Déconnexion</button>
+      <div id="menuUserAvatar" class="avatar-sm"><img src="default.jpg" alt="Avatar utilisateur" class="avatar" /></div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section id="home" class="page">
+      <div class="home-card">
+        <h2>Bienvenue sur ReadTogether</h2>
+        <p>Unir nos lectures, unir nos cœurs. Organisez la répartition des 30 Juz en groupe.</p>
+        <button id="homeConnectBtn" class="btn btn-primary" aria-haspopup="true">Se connecter</button>
+      </div>
+    </section>
+
+    <section id="authPage" class="page" hidden>
+      <div id="emailAuth" class="card">
+        <h3>Connexion Email</h3>
+        <input id="emailInput" type="email" placeholder="Adresse email" />
+        <input id="passwordInput" type="password" placeholder="Mot de passe" />
+        <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
+        <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
+        <button id="emailSignupBtn" class="btn btn-primary">Créer un compte</button>
+        <p class="center">Ou</p>
+        <button id="googleLogin" class="btn btn-google">Connexion avec Google</button>
+        <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
+      </div>
+    </section>
+
+    <section id="dashboard" class="page" hidden>
+      <div id="sessionsList" class="card">
+        <div class="campagne-header">
+          <h3>Campagnes</h3>
+        </div>
+        <!--  🔍 Barre de recherche ajoutée ici  -->
+        <div class="search-wrapper" style="position: relative; margin: 10px 0;">
+          <span
+            style="position:absolute;top:50%;left:10px;transform:translateY(-50%);font-size:18px;color:#555;">🔍</span>
+          <input type="text" id="searchCampaignInput" placeholder="Rechercher une campagne..."
+            style="width:100%;padding:8px 10px 8px 35px; /* espace ajouté pour la loupe */ border-radius:6px;border:1px solid #ccc;" />
+        </div>
+        <!-- Fin ajout -->
+
+        <div class="campagne-header">
+          <button id="toutes" class="btn active">Toutes</button>
+          <button id="lectures" class="btn">Lectures</button>
+          <button id="historique" class="btn">Historique</button>
+        </div>
+
+        <h4 id="campaignTitle"></h4>
+        <!-- Onglets Type Campagne -->
+        <div class="campagneType-tabs">
+          <button id="tabCoran" class="tab-btn active">Lecture Coran</button>
+          <button id="tabZikr" class="tab-btn">Série de Zikr</button>
+        </div>
+        <div id="sessions"></div>
+      </div>
+
+      <div id="sessionView" class="card" hidden>
+        <h3 id="sessionTitle">Lecture</h3>
+        <div id="sessionMeta"></div>
+        <div id="stats" class="stats">Terminés : 0/30</div>
+        <div style="margin-top:12px;">
+          <button id="closeSessionBtn" class="btn btn-danger" style="display:none">Clôturer la campagne</button>
+        </div>
+        <!-- Onglets -->
+        <div class="session-tabs">
+          <button id="tabJuz" class="tab-btn">Juz</button>
+          <button id="tabFormula" class="tab-btn">Formule de Zikr</button>
+          <button id="tabDiscussion" class="tab-btn">Discussion</button>
+        </div>
+
+
+        <!-- ====== ZIKR VIEW ====== -->
+        <div id="zikrView" class="card hidden">
+
+          <div id="zikrMeta"></div>
+
+          <div id="zikrFormulas" class="grid">
+            <!-- formules injectées en JS -->
+          </div>
+          <div id="zikrFeedback" class="zikr-feedback"></div>
+
+        </div>
+
+        <!-- Barre de sélection -->
+        <div id="juzSelectionBar" class="juz-selection-bar hidden">
+
+          <label class="juz-checkbox">
+            <input type="checkbox" id="checkAllJuz" />
+            Tout
+          </label>
+
+          <span id="selectedJuzLabel">Sélection Juz :</span>
+
+          <div id="bulkActions" class="bulk-actions">
+            <button id="validateJuzBtn" class="btn btn-primary">
+              Valider choix
+            </button>
+            <button id="finishJuzBtn" class="btn btn-success">
+              Marquer terminé
+            </button>
+          </div>
+          <div id="juzFeedback" class="juz-feedback"></div>
+
+        </div>
+
+
+        <div id="grid" class="grid"></div>
+        <div id="discussionSection" class="card hidden">
+
+          <h4>Discussion de la campagne</h4>
+
+          <div id="messagesList" class="messages"></div>
+
+          <div id="messageForm">
+            <input id="messageInput" placeholder="Écrire un message…" maxlength="500" />
+            <button id="sendMessageBtn" class="btn btn-primary">
+              Envoyer
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+
+
+
+
+    <section id="juzListPage" class="page" hidden>
+      <h2>Les 30 Juz</h2>
+      <div id="juzListContainer"></div>
+      <div class="pagination">
+        <button id="juzPrev" class="btn">Précédent</button>
+        <span id="juzPageIndicator"></span>
+        <button id="juzNext" class="btn">Suivant</button>
+      </div>
+      <button id="juzListBack" class="btn">Retour</button>
+    </section>
+  </main>
+
+
+  <button id="scrollTopBtn" aria-label="Retour en haut">
+    ⬆️
+  </button>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
+
+
+
+  <div id="bottomActionBtn" class="bottom-actions" style="display:none">
+    <!-- Rejoindre -->
+    <button id="joinWithCodeBtn" class="bottom-btn">
+      <span class="icon-circle">
+        <svg viewBox="0 0 24 24" class="icon">
+          <path d="M16 11c1.66 0 3 1.34 3 3v1H5v-1c0-1.66 1.34-3 3-3
+        0 0 1.5 1 4 1s4-1 4-1z" />
+          <circle cx="12" cy="7" r="3" />
+          <circle cx="6.5" cy="8.5" r="2" />
+          <circle cx="17.5" cy="8.5" r="2" />
+        </svg>
+      </span>
+      <span class="label">Rejoindre</span>
+    </button>
+    <!-- Nouvelle Campagne -->
+    <button id="newSessionBtn" class="bottom-btn">
+      <span class="icon-circle">
+        <svg viewBox="0 0 24 24" class="icon">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </span>
+      <span class="label">Démarrer</span>
+    </button>
+    <!-- Paramètres id="settingsBtn" -->
+    <button id="profileEdition" class="bottom-btn">
+      <span class="icon-circle">
+        <!-- Icône engrenage -->
+        <svg viewBox="0 0 24 24" class="icon">
+          <path d="M19.14 12.94c.04-.31.06-.63.06-.94
+                 0-.32-.02-.63-.06-.94l2.03-1.58
+                 c.18-.14.23-.41.12-.61l-1.92-3.32
+                 c-.11-.2-.36-.28-.57-.2l-2.39.96
+                 c-.5-.38-1.04-.69-1.63-.92l-.36-2.54
+                 c-.03-.22-.22-.38-.44-.38h-3.84
+                 c-.22 0-.41.16-.44.38l-.36 2.54
+                 c-.59.23-1.13.54-1.63.92l-2.39-.96
+                 c-.21-.08-.46 0-.57.2L2.65 8.87
+                 c-.11.2-.06.47.12.61l2.03 1.58
+                 c-.04.31-.06.62-.06.94
+                 0 .31.02.63.06.94l-2.03 1.58
+                 c-.18.14-.23.41-.12.61l1.92 3.32
+                 c.11.2.36.28.57.2l2.39-.96
+                 c.5.38 1.04.69 1.63.92l.36 2.54
+                 c.03.22.22.38.44.38h3.84
+                 c.22 0 .41-.16.44-.38l.36-2.54
+                 c.59-.23 1.13-.54 1.63-.92l2.39.96
+                 c.21.08.46 0 .57-.2l1.92-3.32
+                 c.11-.2.06-.47-.12-.61l-2.03-1.58z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </span>
+      <span class="label">Paramètrer</span>
+    </button>
+
+  </div>
+
+
+  </div>
+
+
+
+
+</body>
+
+</html>
