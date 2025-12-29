@@ -1,0 +1,8 @@
+{
+  "name": "TogetherApp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular",
+  "id": "de5da2e0"
+}
