@@ -679,6 +679,7 @@ main {
   display: none !important;
 }
 
+
 /* ---------- Sessions WhatsApp style ---------- */
 .sessions {
   display: flex;
@@ -1045,10 +1046,7 @@ main {
 
 /* ===== ZIKR ===== */
 
-.zikr-card {
-  text-align: center;
-  padding: 14px;
-}
+
 
 .zikr-title {
   font-weight: 700;
@@ -1061,14 +1059,188 @@ main {
   margin-bottom: 10px;
 }
 
-.zikr-input {
-  width: 100%;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin: 6px 0;
+
+
+
+
+
+
+.zikr-card {
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+
+
+
+.zikr-name {
+  font-weight: bold;
 }
 
 .zikr-actions {
-  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
+
+.btn-minus,
+.btn-plus {
+  padding: 4px 8px;
+  font-weight: bold;
+}
+
+.zikr-objectif {
+  font-weight: bold;
+  text-align: right;
+}
+
+
+
+.zikr-totals {
+  font-size: 0.9em;
+  margin-top: 8px;
+}
+
+.zikr-validate {
+  width: 100%;
+  margin-top: 10px;
+}
+
+
+.zikr-extra {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+
+
+
+.zikr-reste {
+  font-weight: bold;
+}
+
+#zikrFormulas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.zikr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.zikr-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.zikr-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zikr-input {
+  width: 90px;
+}
+
+.zikr-contribs {
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+
+
+.toggle-contribs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 20px;
+  background: #eef2f7;
+  color: #333;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-contribs:hover {
+  background: #dde5f0;
+}
+
+.toggle-contribs:active {
+  transform: scale(0.97);
+}
+
+.toggle-contribs.open {
+  background: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+}
+
+.toggle-contribs .icon {
+  font-size: 1rem;
+}
+
+.zikr-contributor {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.contrib-name {
+  font-weight: 500;
+}
+
+.contrib-value {
+  font-weight: bold;
+}
+
+
+.contrib-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.contrib-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px;
+}
+
+.contrib-btn:hover {
+  transform: scale(1.1);
+}
+
+.contrib-btn.finish {
+  color: #28a745;
+}
+
+.contrib-btn.edit {
+  color: #007bff;
+}
+
+
+.zikr-contributor.finished {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.contrib-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

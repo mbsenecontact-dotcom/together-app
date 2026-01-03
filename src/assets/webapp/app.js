@@ -61,21 +61,88 @@ let currentTypeFilter = "coran";  // coran | zikr
 //let currentSessionTab = "juz"; // "juz" | "discussion"
 const tabCoran = document.getElementById("tabCoran");
 const tabZikr = document.getElementById("tabZikr");
+const juzGrid = document.getElementById('grid');      // grille Juz dans sessionView
+const zikrGrid = document.getElementById('zikrView'); // grille Zikr
+const juzSelectionBar = document.getElementById('juzSelectionBar'); // si tu veux aussi cacher pour Zikr
 
+const sessionView = document.getElementById('sessionView');
+
+
+
+/*
 tabCoran.onclick = () => {
   currentTypeFilter = "coran";
+
   tabCoran.classList.add("active");
   tabZikr.classList.remove("active");
+
+  // Affiche uniquement la grille Juz
+  juzGrid.classList.remove("hidden");
+  zikrGrid.classList.add("hidden");
+
+  // Affiche la barre de sélection Juz
+  juzSelectionBar.classList.remove("hidden");
+
   applyFilter();
 };
 
 tabZikr.onclick = () => {
   currentTypeFilter = "zikr";
+
   tabZikr.classList.add("active");
   tabCoran.classList.remove("active");
+
+  // Affiche uniquement la grille Zikr
+  zikrGrid.classList.remove("hidden");
+  juzGrid.classList.add("hidden");
+
+  // Cache la barre de sélection Juz
+  juzSelectionBar.classList.add("hidden");
+
   applyFilter();
 };
 
+*/
+
+tabCoran.onclick = () => {
+  currentTypeFilter = "coran";
+
+  tabCoran.classList.add("active");
+  tabZikr.classList.remove("active");
+
+// Cacher
+sessionView.hidden = true;
+    // Affiche uniquement la grille Juz
+    //juzGrid.classList.remove("hidden");
+   // zikrGrid.classList.add("hidden");
+  
+    // Affiche la barre de sélection Juz
+    //juzSelectionBar.classList.remove("hidden");
+
+
+   // réinitialise les onglets internes
+
+  applyFilter();
+};
+
+tabZikr.onclick = () => {
+  currentTypeFilter = "zikr";
+
+  tabZikr.classList.add("active");
+  tabCoran.classList.remove("active");
+
+  // Affiche uniquement la grille Zikr
+  // Affiche uniquement la grille Zikr
+  zikrGrid.classList.remove("hidden");
+  juzGrid.classList.add("hidden");
+
+  // Cache la barre de sélection Juz
+  //juzSelectionBar.classList.add("hidden");
+   // réinitialise les onglets internes
+   sessionView.hidden = true;
+
+  applyFilter();
+};
 
 /* ---------- Helpers ---------- */
 function showPage(id) {
@@ -251,48 +318,7 @@ async function loadSessions() {
   // 🔥 UN SEUL rendu
   applyFilter();
 }
-/*
-async function applyFilter() {
-  let list = [];
 
-  if (currentFilter === "toutes") {
-    list = allVisibleSessions;
-  } else {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    for (const session of allVisibleSessions) {
-      const juzSnap = await getDocs(
-        collection(db, SESSIONS_COLLECTION, session.id, "juz")
-      );
-
-      const juzList = juzSnap.docs.map(d => d.data());
-
-      if (
-        (currentFilter === "lectures") &&
-        juzList.some(j =>
-          j.assignedTo === user.uid &&
-          session.status !== "closed"
-        )
-      ) {
-        list.push(session);
-      }
-
-      if (
-        currentFilter === "historique" &&
-        juzList.some(j =>
-          j.assignedTo === user.uid &&
-          j.status === "finished"
-        ) &&
-        session.status === "closed"
-      ) {
-        list.push(session);
-      }
-    }
-  }
-
-  renderSessions(list);
-}*/
 async function applyFilter() {
   let list = [];
   const user = auth.currentUser;
@@ -416,54 +442,67 @@ function renderSessions(list) {
  * loads juz and attaches realtime listeners
  */
 let currentSessionId = null;
+let currentSession = null; // variable globale
 let unsubscribers = [];
+//const sessionHeader = document.getElementById('sessionHeader');
+const sessionTitle = document.getElementById('sessionTitle');
+const sessionMeta = document.getElementById('sessionMeta');
+const stats = document.getElementById('stats');
+const closeBtn = document.getElementById('closeSessionBtn');
+
 async function openSession(session) {
   // cleanup listeners
   unsubscribers.forEach(u => u && u());
   unsubscribers = [];
-  
+
+  currentSession = session; // stocke la session complète
   currentSessionId = session.id;
-  const sessionView = document.getElementById('sessionView');
-  const sessionTitle = document.getElementById('sessionTitle');
-  el.sessionView.style.display = 'block';
 
-  el.sessionView.hidden = false;
-  el.sessionTitle.textContent = session.title;
+  // Affiche l'entête
+ // sessionHeader.classList.remove('hidden');
 
+  // Personnalisation selon type de campagne
   if (session.typeCampagne === 'zikr') {
+    sessionTitle.textContent = 'Série de Zikr';
+    stats.style.display = 'none';
+    closeBtn.textContent = 'Clôturer la série de Zikr';
+
+    // Affiche uniquement la grille Zikr
+    //document.getElementById('zikrView').classList.remove('hidden');
+    //document.getElementById('grid').classList.add('hidden');
+    //document.getElementById('juzSelectionBar').classList.add('hidden');
+    document.getElementById('sessionView').classList.remove('hidden');
     showZikrCampaign(session);
+
   } else {
+    sessionTitle.textContent = 'Lecture Coran';
+    stats.style.display = 'block';
+    closeBtn.textContent = 'Clôturer la campagne';
+
+    // Affiche uniquement la grille Juz
+   // document.getElementById('grid').classList.remove('hidden');
+    //document.getElementById('zikrView').classList.add('hidden');
+   // document.getElementById('juzSelectionBar').classList.remove('hidden');
+   document.getElementById('sessionView').classList.remove('hidden');
+   
     showCoranCampaign(session);
   }
 
-  // read session metadata
+  // Charger les métadonnées
   const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
   if (!metaSnap.exists()) return alert('Session introuvable');
   const meta = metaSnap.data();
-  el.sessionTitle.textContent = meta.name || 'Lecture';
 
-
-  const isAdmin = auth.currentUser.uid === meta.createdBy;
-  const hasInviteCode = !!meta.inviteCode;
-
-  el.sessionMeta.innerHTML = `
+  sessionMeta.innerHTML = `
     <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
     <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
     <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
-
-    ${isAdmin && hasInviteCode ? `
-      <div id="showCodeInvitation" class="invite-code-box">
-        <div class="invite-label">Code invitation</div>
-        <div class="invite-code">${meta.inviteCode}</div>
-
-        <div class="invite-actions">
-          <button class="share-btn" id="shareWhatsappBtn">WhatsApp</button>
-          <button class="share-btn" id="shareMailBtn">Email</button>
-        </div>
-      </div>
-    ` : ``}
   `;
 
+  // Afficher ou cacher bouton Clôturer selon statut
+  const isAdmin = auth.currentUser.uid === meta.createdBy;
+  const isClosed = meta.status === 'closed';
+  closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
 
 
   //Ajout du partage WhatsApp / Email
@@ -532,11 +571,11 @@ if (canAccessDiscussion) {
 
   // close session button visible only to admin
   //const user = auth.currentUser;
-  const isClosed = meta.status === 'closed';
+  //const isClosed = meta.status === 'closed';
   const allFinished = arr.every(j => j && j.status === 'finished');
 
   // Références
-  const closeBtn = el.closeSessionBtn;
+  //const closeBtn = el.closeSessionBtn;
   const inviteBox = document.getElementById('showCodeInvitation');
 
   // --- Campagne déjà clôturée ---
@@ -629,7 +668,8 @@ function renderGrid(juzData) {
   el.grid.innerHTML = '';
   let finished = 0;
 
-  juzData.forEach(j => {
+  juzData.forEach(j => 
+    {
     if (!j) return;
     if (j.status === 'finished') finished++;
 
@@ -658,72 +698,47 @@ function renderGrid(juzData) {
       statusClass = 'badge-finished';
     }
 
-    card.innerHTML = `
-  <div class="juz-header">
-    <label class="juz-checkbox">
-      <input
-        type="checkbox"
-        class="juz-check"
-        data-juz="${j.number}"
-        ${j.status === 'finished' ? 'checked disabled' : ''}
-      />
-      <span class="juz-number">Juz ${j.number}</span>
-    </label>
+        card.innerHTML = `
+      <div class="juz-header">
+        <label class="juz-checkbox">
+          <input
+            type="checkbox"
+            class="juz-check"
+            data-juz="${j.number}"
+            ${j.status === 'finished' ? 'checked disabled' : ''}
+          />
+          <span class="juz-number">Juz ${j.number}</span>
+        </label>
 
-    <span class="juz-badge ${statusClass}">
-      ${statusLabel}
-    </span>
-  </div>
-`;
+        <span class="juz-badge ${statusClass}">
+          ${statusLabel}
+        </span>
+      </div>
+    `;
 
 
     // 🖱️ clic sur la carte → toggle checkbox (sauf disabled)
-card.addEventListener('click', e => {
-  if (e.target.tagName === 'INPUT') return;
+    card.addEventListener('click', e => 
+    {
+      if (e.target.tagName === 'INPUT') return;
 
-  const checkbox = card.querySelector('.juz-check');
-  if (checkbox.disabled) return;
-
-  checkbox.checked = !checkbox.checked;
-
-  // 🔥 FORCE la mise à jour globale
-  checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-});
-
+      const checkbox = card.querySelector('.juz-check');
+      if (checkbox.disabled) return;
+      
+      checkbox.checked = !checkbox.checked;
+      // 🔥 FORCE la mise à jour globale
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
 
-    el.grid.appendChild(card);
+
+        el.grid.appendChild(card);
   });
 
   el.stats.textContent = `Terminés : ${finished} / 30`;
   setupJuzCheckboxes();
 }
 
-function updateBulkActions() {
-  const selected = document.querySelectorAll('.juz-check:checked');
-  document.getElementById('bulkActions')
-    .classList.toggle('hidden', selected.length === 0);
-}
-
-
-function updateJuzActionsVisibility() {
-  const selected = document.querySelectorAll('.juz-check:checked');
-  const actions = document.getElementById('bulkActions');
-
-  actions.classList.toggle('hidden', selected.length === 0);
-}
-
-function setupSelectAllCheckbox() {
-  const checkAll = document.getElementById('checkAllJuz');
-  if (!checkAll) return;
-
-  checkAll.onchange = () => {
-    document.querySelectorAll('.juz-check:not(:disabled)').forEach(cb => {
-      cb.checked = checkAll.checked;
-    });
-    updateJuzActionsVisibility();
-  };
-}
 
 function setupJuzCheckboxes() {
   const checkboxes = document.querySelectorAll('.juz-check');
@@ -768,41 +783,6 @@ function updateJuzSelectionUI() {
     .join(', ')}`;
 }
 
-function setupJuzSelection() {
-  const checkAll = document.getElementById('checkAllJuz');
-
-  document.querySelectorAll('.juz-check').forEach(cb => {
-    cb.addEventListener('change', updateJuzSelectionBar);
-  });
-
-  checkAll.onchange = () => {
-    const checked = checkAll.checked;
-    document.querySelectorAll('.juz-check').forEach(cb => {
-      if (!cb.disabled) cb.checked = checked;
-    });
-    updateJuzSelectionBar();
-  };
-
-  updateJuzSelectionBar();
-}
-
-function updateJuzSelectionBar() {
-  const bar = document.getElementById('juzSelectionBar');
-  const label = document.getElementById('selectedJuzLabel');
-
-  const checked = [...document.querySelectorAll('.juz-check:checked')];
-
-  if (checked.length === 0) {
-    bar.classList.add('hidden');
-    return;
-  }
-
-  bar.classList.remove('hidden');
-
-  const nums = checked.map(c => c.dataset.juz);
-  label.textContent = `Sélection Juz : ${nums.join(', ')}`;
-}
-
 document.getElementById('validateJuzBtn').onclick = async () => {
   const user = auth.currentUser;
   if (!user || !currentSessionId) return;
@@ -835,10 +815,11 @@ document.getElementById('validateJuzBtn').onclick = async () => {
       refusedOther.push(num);
     }
   }
-
+const message = 'Juz Chosis :'
   showJuzFeedback({
     success,
-    refusedOther
+    refusedOther, 
+    message
   });
 };
 
@@ -875,11 +856,11 @@ document.getElementById('finishJuzBtn').onclick = async () => {
       refusedOther.push(num);
     }
   }
-
-  showJuzFeedback({ success, refusedFree, refusedOther });
+    const message = 'Juz terminés :'
+  showJuzFeedback({ success, refusedFree, refusedOther , message});
 };
 
-function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [] }) {
+function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [] , message}) {
   const box = document.getElementById('juzFeedback');
   box.className = 'juz-feedback';
 
@@ -887,7 +868,7 @@ function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [] }) 
 
   if (success.length) {
     box.classList.add('success');
-    html += `✅ Juz terminés : ${success.join(', ')}<br>`;
+    html += `✅ ${message} ${success.join(', ')}<br>`;
   }
 
   if (refusedFree.length || refusedOther.length) {
@@ -944,11 +925,11 @@ function openCreateSessionModal() {
       
       <div class="visibility-switch">
       <label>Visibilité :</label>
+      <span id="labelPrivate">Privée</span>
         <label class="switch">
           <input type="checkbox" id="ns_public" checked>
           <span class="slider"></span>
         </label>
-        <span id="labelPrivate">Privée</span>
         <span id="labelPublic">Publique</span>
       </div>
     </div>
@@ -1175,11 +1156,15 @@ function showZikrCampaign(session) {
   const zikrView = document.getElementById('zikrView');
   zikrView.classList.remove('hidden');
 
-  document.getElementById('zikrMeta').innerHTML = `
-    <small>
-      📅 ${session.startDate} → ${session.endDate}
-    </small>
-  `;
+  //setupZikrInteractions();
+
+  // A REMPLACER PAR LE CADRE DE SELECTION VALIDATION ZIKR COMME LE MEME CAS QUE SUR LES JUZ
+  //document.getElementById('zikrMeta').innerHTML = `
+  //  <small>
+    //  📅 ${session.startDate} → ${session.endDate}
+  //  </small>
+  //`;
+  /////////////////////////////////////////////
 
   const colRef = collection(
     db,
@@ -1198,23 +1183,55 @@ function showZikrCampaign(session) {
 }
 
 
+document.addEventListener("click", e => {
+  if (e.target.classList.contains("toggle-contribs")) {
+    const contribs = e.target.nextElementSibling;
+    contribs.classList.toggle("hidden");
+  }
+});
+
+
+/*
+function getZikrStatus(objectif, current) {
+  if (!current || current === 0) {
+    return { key: 'free', label: 'disponible' };
+  }
+
+  if (current < objectif) {
+    return { key: 'assigned', label: 'en cours' };
+  }
+
+  return { key: 'finished', label: 'terminé' };
+}
+*/
+
+function getZikrStatus(objectif, current, finished) {
+  if (!current || current === 0) {
+    return { key: 'free', label: 'disponible' };
+  }
+
+  if (finished >= objectif && objectif > 0) {
+    return { key: 'finished', label: 'terminé' };
+  }
+
+  return { key: 'assigned', label: 'en cours' };
+}
+
 async function renderZikrFormulas(formules, sessionId) {
   const container = document.getElementById('zikrFormulas');
   container.innerHTML = '';
 
   for (const f of formules) {
-
     const objectif = Number(f.objectif) || 0;
-    const total = Number(f.total) || 0;
+    const current = Number(f.current || 0);
 
-    const current = f.current || 0;
-    const reste = typeof f.reste === 'number'
-    ? f.reste
-    : Math.max(0, objectif - current);
+    const finished = Number(f.finished || 0);
+    const reste = Math.max(0, objectif - current);
 
-
+    const status = getZikrStatus(objectif, current, finished);
 
 
+    // 🔥 contributions
     const contribSnap = await getDocs(
       collection(
         db,
@@ -1226,41 +1243,237 @@ async function renderZikrFormulas(formules, sessionId) {
       )
     );
 
-    const contributions = contribSnap.docs.map(d => d.data());
+    //const contributions = contribSnap.docs.map(d => d.data());
 
-    const list = contributions
-      .map(c => `• ${c.pseudo} : ${c.value}`)
-      .join('<br>');
+    const contributions = contribSnap.docs.map(d => ({
+      uid: d.id,        // 🔥 UID réel
+      ...d.data()
+    }));
+    
+    const isOwner = contributions.uid === auth.currentUser.uid;
 
-    const card = document.createElement('div');
-    card.className = 'card zikr-card';
+    const contributorsHtml = contributions.length
+    ? contributions.map(c => {
+        const isOwner = c.uid === auth.currentUser.uid;
+        const alreadyFinished = !!c.isFinished; // vrai si déjà terminé
+        return `
+          <div class="zikr-contributor" data-uid="${c.uid}">
+            <span class="contrib-name">${c.pseudo}</span>
+            <span class="contrib-value">${c.value}</span>
+  
+            <div class="contrib-actions">
+              <button class="contrib-btn edit" ${!isOwner ? 'disabled' : ''} title="${!isOwner ? '' : 'Modifier la contribution'}" data-action="edit">✏️</button>
+              <button class="contrib-btn finish" ${!isOwner || alreadyFinished ? 'disabled' : ''} title="${alreadyFinished ? 'Déjà terminé' : !isOwner ? '':'Marquer comme terminé'}">✔️</button>
+            </div>
+          </div>
+        `;
+      }).join('')
+    : `<em class="no-contrib">Aucun contributeur</em>`;
+  
 
-    card.innerHTML = `
-      <div class="zikr-title">${f.name}</div>
+const card = document.createElement('div');
 
-      <div class="zikr-stats">
-        Objectif : ${objectif}<br>
-        Total : ${current || 0}<br>
-        <strong>Reste : ${reste}</strong>
+card.className = `card juz zikr zikr-card ${status.key}`;
+
+
+card.dataset.formuleId = f.id;
+
+card.innerHTML = `
+    <div class="juz-header zikr-header">
+    <span class="zikr-title">
+      ${f.name} (${objectif})
+    </span>
+
+    <span class="juz-badge badge-${status.key}">
+      ${status.label}
+    </span>
+  </div>
+
+  <div class="zikr-body">
+
+    <button class="toggle-contribs" type="button">
+      <span class="icon">👥</span>
+      <span class="label">Contributeurs</span>
+    </button>
+
+    <div class="zikr-contribs hidden">
+      ${contributorsHtml}
+      <hr>
+      <div class="zikr-total">
+        Total choisi: <strong>${current}</strong>
       </div>
-
-      <div class="zikr-contribs">
-        <small>Choix :</small><br>
-        ${list || '<em>Aucune contribution</em>'}
+      <div class="zikr-total">
+        Total terminé: <strong>${finished}</strong>
       </div>
+      
 
-      <input type="number" min="1" max="${reste}" class="zikr-input" />
-      <button class="btn btn-success small">Valider</button>
-    `;
+    <div class="zikr-total">
+      <input
+        type="number"
+        min="1"
+        max="${reste}"
+        placeholder="choix"
+        class="zikr-input"
+        data-formule-id="${f.id}"
+        ${reste === 0 ? 'disabled' : ''}
+      />
+      <span class="zikr-reste">/ ${reste}</span>
+    </div>
 
-    card.querySelector('button').onclick = () =>
-      validateZikrFormula(sessionId, f.id, card);
+
+    </div>
+  </div>
+`;
+
+card.querySelectorAll('.contrib-btn.finish')
+  .forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+
+      const row = btn.closest('.zikr-contributor');
+      const uid = row.dataset.uid;
+
+      // sécurité : seul l'utilisateur courant peut terminer
+      if (uid !== auth.currentUser.uid) {
+        showZikrFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
+        return;
+      }
+
+      const formulaId = card.dataset.formuleId;
+      await finishZikrContribution(currentSessionId, formulaId, card);
+    });
+  });
+
+
+    // 🔽 toggle contributeurs
+
+
+      const toggleBtn = card.querySelector('.toggle-contribs');
+const contribsBox = card.querySelector('.zikr-contribs');
+
+toggleBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  contribsBox.classList.toggle('hidden');
+});
+
 
     container.appendChild(card);
   }
 }
 
+async function finishZikrContribution(sessionId, formulaId, card) {
+  const user = auth.currentUser;
+  if (!user) return;
 
+  const contribRef = doc(
+    db,
+    SESSIONS_COLLECTION,
+    sessionId,
+    'formules',
+    formulaId,
+    'contributions',
+    user.uid
+  );
+
+  const snap = await getDoc(contribRef);
+  if (!snap.exists()) {
+    showZikrFeedback("❌ Aucune contribution trouvée", "error");
+    return;
+  }
+
+  const data = snap.data();
+  const value = Number(data.value || 0);
+  const alreadyFinished = Number(data.finished || 0);
+
+  if (alreadyFinished >= value) {
+    showZikrFeedback("✅ Contribution déjà terminée");
+    return;
+  }
+
+  const toFinish = value - alreadyFinished;
+
+  // 🔥 1️⃣ marquer la contribution comme terminée
+  await updateDoc(contribRef, {
+    finished: increment(toFinish),
+    isFinished: true,
+    updatedAt: serverTimestamp()
+  });
+
+  // 🔥 2️⃣ incrémenter le total terminé de la formule
+  const formulaRef = doc(
+    db,
+    SESSIONS_COLLECTION,
+    sessionId,
+    'formules',
+    formulaId
+  );
+
+  await updateDoc(formulaRef, {
+    finished: increment(toFinish)
+  });
+
+  showZikrFeedback("🎉 Contribution marquée comme terminée");
+
+  // UX locale
+  updateLocalFinishedUI(card, toFinish);
+}
+
+function updateLocalFinishedUI(card, value) {
+  const row = card.querySelector(
+    `.zikr-contributor[data-uid="${auth.currentUser.uid}"]`
+  );
+
+  if (row) {
+    row.classList.add('finished');
+  }
+}
+
+
+function updateLocalContributorUI(card, value) {
+  const uid = auth.currentUser.uid;
+  let row = card.querySelector(`.zikr-contributor[data-uid="${uid}"]`);
+
+  if (!row) {
+    row = document.createElement('div');
+    row.className = 'zikr-contributor';
+    row.dataset.uid = uid;
+    row.innerHTML = `
+      <span class="contrib-name">${auth.currentUser.displayName}</span>
+      <span class="contrib-value">${value}</span>
+    `;
+    card.querySelector('.zikr-contribs').prepend(row);
+  } else {
+    row.querySelector('.contrib-value').textContent = value;
+  }
+}
+
+
+document.getElementById('validateZikrChoices').addEventListener('click', async () => {
+
+    const cards = document.querySelectorAll('.zikr-card');
+
+    for (const card of cards) {
+      const input = card.querySelector('.zikr-input');
+      if (!input || input.disabled) continue;
+
+      const value = Number(input.value);
+      if (!value || value <= 0) continue;
+
+      const formulaId = input.dataset.formuleId;
+
+      await validateZikrFormula(
+        currentSessionId,
+        formulaId,
+        card
+      );
+      updateLocalContributorUI(card, value);
+    }
+
+    // 🔄 refresh UI
+    //await loadZikrFormulas(currentSessionId);
+  });
+
+//FIN
 
 async function validateZikrFormula(sessionId, formulaId, card) {
   const user = auth.currentUser;
@@ -1586,51 +1799,23 @@ searchInput.addEventListener("input", () => {
 
 
 /* ---------- Filtres campagnes ---------- */
-/*
-function setActiveFilter(activeBtn) {
-  // bordure active
-  filterButtons.forEach(btn => btn.classList.remove("active"));
-  activeBtn.classList.add("active");
-
-  // titre
-  if (activeBtn === btnToutes) {
-    campaignTitle.textContent = "Toutes les campagnes";
-    currentFilter = "toutes";
-    applyFilter();
-  }
-
-  if (activeBtn === btnLectures) {
-    campaignTitle.textContent = "Mes lectures en cours";
-    currentFilter = "lectures";
-    applyFilter();
-  }
-
-  if (activeBtn === btnHistorique) {
-    campaignTitle.textContent = "Mon historique de lecture";
-    currentFilter = "historique";
-    applyFilter();
-  }
-
-
-
-}*/
 
 function setActiveFilter(activeBtn) {
   filterButtons.forEach(btn => btn.classList.remove("active"));
   activeBtn.classList.add("active");
 
   if (activeBtn === btnToutes) {
-    campaignTitle.textContent = "Toutes les campagnes";
+    campaignTitle.textContent = "Toutes les campagnes...";
     currentFilter = "toutes";
   }
 
   if (activeBtn === btnLectures) {
-    campaignTitle.textContent = "Mes lectures en cours";
+    campaignTitle.textContent = "Mes campagnes en cours...";
     currentFilter = "lectures";
   }
 
   if (activeBtn === btnHistorique) {
-    campaignTitle.textContent = "Mon historique de lecture";
+    campaignTitle.textContent = "Mon historique de participation...";
     currentFilter = "historique";
   }
 
@@ -1648,27 +1833,25 @@ setActiveFilter(btnToutes);
 
 
 function refreshGrid() {
-  el.sessionView.style.display = 'none';
+  //el.sessionView.style.display = 'none';
+  sessionView.hidden = true;
   applyFilter();
 }
 
 
 const scrollTopBtn = document.getElementById("scrollTopBtn");
 
-window.addEventListener("scroll", () => {
-  if (window.scrollY > 300) {
-    scrollTopBtn.style.display = "block";
-  } else {
-    scrollTopBtn.style.display = "none";
-  }
-});
 
-scrollTopBtn.addEventListener("click", () => {
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
+
+if (scrollTopBtn) {
+  window.addEventListener("scroll", () => {
+    scrollTopBtn.style.display = window.scrollY > 300 ? "block" : "none";
   });
-});
+
+  scrollTopBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
 
 
 
@@ -1816,40 +1999,6 @@ function loadMessages(sessionId) {
   });
 }
 
-
-
-/*
-function initSessionTabs() {
-  const tabJuz = document.getElementById("tabJuz");
-  const tabFormula = document.getElementById("tabFormula"); 
-  const tabDiscussion = document.getElementById("tabDiscussion");
-  const grid = document.getElementById("grid");
-  const discussion = document.getElementById("discussionSection");
-
-  if (!tabJuz || !tabDiscussion) return;
-
-  tabJuz.onclick = () => {
-
-    grid.classList.remove("hidden");
-    zikrView.classList.remove("hidden");
-    discussion.classList.add("hidden");
-    
-
-    tabJuz.classList.add("active");
-    tabDiscussion.classList.remove("active");
-  };
-
-  tabDiscussion.onclick = () => {
-
-    grid.classList.add("hidden");
-    discussion.classList.remove("hidden");
-    zikrView.classList.add("hidden");
-
-    tabDiscussion.classList.add("active");
-    tabJuz.classList.remove("active");
-  };
-}
-*/
 
 function initSessionTabs(session) {
   const tabJuz = document.getElementById("tabJuz");

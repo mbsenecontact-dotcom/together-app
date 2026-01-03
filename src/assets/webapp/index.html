@@ -63,9 +63,9 @@
         <!-- Fin ajout -->
 
         <div class="campagne-header">
-          <button id="toutes" class="btn active">Toutes</button>
-          <button id="lectures" class="btn">Lectures</button>
-          <button id="historique" class="btn">Historique</button>
+          <button id="toutes" class="tab-btn active">Toutes</button>
+          <button id="lectures" class="tab-btn">Lectures</button>
+          <button id="historique" class="tab-btn">Historique</button>
         </div>
 
         <h4 id="campaignTitle"></h4>
@@ -77,6 +77,17 @@
         <div id="sessions"></div>
       </div>
 
+      <!-- Entête de session séparée
+      <div id="sessionHeader" class="session-header card hidden">
+
+        <h3 id="sessionTitle">Lecture</h3>
+        <div id="sessionMeta"></div>
+        <div id="stats" class="stats">Terminés : 0/30</div>
+        <div style="margin-top:12px;">
+          <button id="closeSessionBtn" class="btn btn-danger" style="display:none">Clôturer la campagne</button>
+        </div>
+
+      </div> -->
       <div id="sessionView" class="card" hidden>
         <h3 id="sessionTitle">Lecture</h3>
         <div id="sessionMeta"></div>
@@ -92,17 +103,6 @@
         </div>
 
 
-        <!-- ====== ZIKR VIEW ====== -->
-        <div id="zikrView" class="card hidden">
-
-          <div id="zikrMeta"></div>
-
-          <div id="zikrFormulas" class="grid">
-            <!-- formules injectées en JS -->
-          </div>
-          <div id="zikrFeedback" class="zikr-feedback"></div>
-
-        </div>
 
         <!-- Barre de sélection -->
         <div id="juzSelectionBar" class="juz-selection-bar hidden">
@@ -126,8 +126,29 @@
 
         </div>
 
-
         <div id="grid" class="grid"></div>
+
+        <!-- ====== ZIKR VIEW ====== -->
+        <div id="zikrView" class="card hidden">
+
+          <!--<div id="zikrMeta"></div>-->
+          <div id="zikrFeedback" class="zikr-feedback"></div>
+
+          <button id="validateZikrChoices" class="btn btn-success">
+            Valider les choix
+          </button>
+
+          <div id="zikrFormulas" class="grid">
+            <!-- formules injectées en JS -->
+          </div>
+
+
+        </div>
+
+
+
+
+
         <div id="discussionSection" class="card hidden">
 
           <h4>Discussion de la campagne</h4>
@@ -141,24 +162,11 @@
             </button>
           </div>
         </div>
+
       </div>
 
     </section>
 
-
-
-
-
-    <section id="juzListPage" class="page" hidden>
-      <h2>Les 30 Juz</h2>
-      <div id="juzListContainer"></div>
-      <div class="pagination">
-        <button id="juzPrev" class="btn">Précédent</button>
-        <span id="juzPageIndicator"></span>
-        <button id="juzNext" class="btn">Suivant</button>
-      </div>
-      <button id="juzListBack" class="btn">Retour</button>
-    </section>
   </main>
 
 
@@ -227,11 +235,7 @@
 
   </div>
 
-
   </div>
-
-
-
 
 </body>
 
