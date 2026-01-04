@@ -501,6 +501,7 @@ async function openSession(session) {
 
   // Afficher ou cacher bouton Clôturer selon statut
   const isAdmin = auth.currentUser.uid === meta.createdBy;
+  const hasInviteCode = !!meta.inviteCode;
   const isClosed = meta.status === 'closed';
   closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
 
