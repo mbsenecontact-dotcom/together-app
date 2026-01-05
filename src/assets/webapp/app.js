@@ -6,9 +6,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 
-
 import {
-  signInWithPopup, signOut, onAuthStateChanged,
+  signInWithPopup, signOut, 
+  onAuthStateChanged,
+  signInWithRedirect,
+  getRedirectResult,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, sendEmailVerification, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -68,42 +70,6 @@ const juzSelectionBar = document.getElementById('juzSelectionBar'); // si tu veu
 const sessionView = document.getElementById('sessionView');
 
 
-
-/*
-tabCoran.onclick = () => {
-  currentTypeFilter = "coran";
-
-  tabCoran.classList.add("active");
-  tabZikr.classList.remove("active");
-
-  // Affiche uniquement la grille Juz
-  juzGrid.classList.remove("hidden");
-  zikrGrid.classList.add("hidden");
-
-  // Affiche la barre de sélection Juz
-  juzSelectionBar.classList.remove("hidden");
-
-  applyFilter();
-};
-
-tabZikr.onclick = () => {
-  currentTypeFilter = "zikr";
-
-  tabZikr.classList.add("active");
-  tabCoran.classList.remove("active");
-
-  // Affiche uniquement la grille Zikr
-  zikrGrid.classList.remove("hidden");
-  juzGrid.classList.add("hidden");
-
-  // Cache la barre de sélection Juz
-  juzSelectionBar.classList.add("hidden");
-
-  applyFilter();
-};
-
-*/
-
 tabCoran.onclick = () => {
   currentTypeFilter = "coran";
 
@@ -145,6 +111,20 @@ tabZikr.onclick = () => {
 };
 
 /* ---------- Helpers ---------- */
+
+function mustUseRedirect() {
+  return window.matchMedia("(display-mode: standalone)").matches;
+}
+
+function canUsePopup() {
+  return (
+    typeof window !== "undefined" &&
+    window.innerWidth > 768 &&
+    !window.matchMedia("(display-mode: standalone)").matches
+  );
+}
+
+
 function showPage(id) {
   document.querySelectorAll('.page').forEach(s => s.hidden = true);
   document.getElementById(id).hidden = false;
@@ -156,42 +136,96 @@ function parseCSVemails(text) {
 }
 
 /* ---------- Auth handlers (email+google) ---------- */
-el.googleLogin?.addEventListener('click', async () => {
-  try { await signInWithPopup(auth, provider); }
-  catch (e) { console.error(e); alert(e.message); }
+
+// Fonction utilitaire pour afficher feedback
+function showAuthFeedback(type, message, panel = 'login') {
+  const container = document.getElementById(
+    panel === 'login' ? 'loginFeedback' : 'signupFeedback'
+  );
+  container.textContent = message;
+  container.className = 'auth-feedback ' + (type === 'error' ? 'error' : 'success');
+}
+
+// Google
+el.googleLogin?.addEventListener("click", async () => {
+  try {
+    if (canUsePopup()) {
+      await signInWithPopup(auth, provider);
+    } else {
+      await signInWithRedirect(auth, provider);
+    }
+  } catch (e) {
+    console.error(e);
+    showAuthFeedback("error", e.message, "login");
+  }
 });
 
+
+// Inscription Email
 el.emailSignupBtn?.addEventListener('click', async () => {
   const email = el.emailInput.value.trim();
   const password = el.passwordInput.value.trim();
   const pseudo = el.pseudoInput.value.trim();
-  if (!email || !password || !pseudo) return alert('Remplissez tous les champs');
+
+  if (!email || !password || !pseudo) {
+    return showAuthFeedback('error', 'Remplissez tous les champs', 'signup');
+  }
+
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: pseudo });
     await sendEmailVerification(cred.user);
-    alert('Compte créé. Vérifiez votre email avant connexion.');
-    showPage('home');
-  } catch (e) { console.error(e); alert(e.message); }
+
+    showAuthFeedback('success', 'Compte créé. Vérifiez votre email avant connexion.', 'signup');
+    //showPage('home');
+  } catch (e) {
+    console.error(e);
+    showAuthFeedback('error', e.message, 'signup');
+  }
 });
 
+// Connexion Email
 el.emailLoginBtn?.addEventListener('click', async () => {
   const email = el.emailInput.value.trim();
   const password = el.passwordInput.value.trim();
+
+  if (!email || !password) {
+    return showAuthFeedback('error', 'Remplissez tous les champs', 'login');
+  }
+
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
+
     if (cred.user.providerData.some(p => p.providerId === 'password') && !cred.user.emailVerified) {
-      alert('Vérifiez votre email avant connexion.');
+      showAuthFeedback('error', 'Vérifiez votre email avant connexion.', 'login');
       await signOut(auth);
+      return;
     }
-  } catch (e) { console.error(e); alert(e.message); }
+
+    showAuthFeedback('success', 'Connexion réussie !', 'login');
+    //showPage('home');
+  } catch (e) {
+    console.error(e);
+    showAuthFeedback('error', e.message, 'login');
+  }
 });
 
+// Mot de passe oublié
 el.forgotPassword?.addEventListener('click', async (ev) => {
   ev.preventDefault();
   const email = el.emailInput.value.trim();
-  if (!email) return alert('Entrez votre email pour réinitialiser');
-  try { await sendPasswordResetEmail(auth, email); alert('Email de réinitialisation envoyé'); } catch (e) { alert(e.message); }
+
+  if (!email) {
+    return showAuthFeedback('error', 'Entrez votre email pour réinitialiser', 'login');
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showAuthFeedback('success', 'Email de réinitialisation envoyé', 'login');
+  } catch (e) {
+    console.error(e);
+    showAuthFeedback('error', e.message, 'login');
+  }
 });
 
 /* ---------- Session / Campaign logic ---------- */
@@ -487,17 +521,141 @@ async function openSession(session) {
    
     showCoranCampaign(session);
   }
+// Charger les métadonnées
+const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
+if (!metaSnap.exists()) return alert('Session introuvable');
+const meta = metaSnap.data();
 
+
+const isAdmin = auth.currentUser.uid === meta.createdBy;
+const hasInviteCode = !!meta.inviteCode;
+const isClosed = meta.status === 'closed';
+
+
+el.sessionMeta.innerHTML = `
+  <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
+  <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
+  <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
+
+  ${isAdmin && hasInviteCode ? `
+    <div id="showCodeInvitation" class="invite-code-box">
+      <div class="invite-label">Code invitation</div>
+      <div class="invite-code">${meta.inviteCode}</div>
+
+      <div class="invite-actions">
+        <button class="share-btn icon-only" id="shareBtn" title="Partager">
+  <i class="fa-solid fa-share-nodes"></i>
+</button>
+
+      </div>
+
+      
+    </div>
+  ` : ``}
+`;
+
+
+if (isAdmin && hasInviteCode) {
+  const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
+
+  document.getElementById("shareBtn")?.addEventListener("click", async () => {
+    if (navigator.share) {
+      // 📱 Mobile : partage natif
+      try {
+        await navigator.share({
+          title: `Invitation – ${meta.name}`,
+          text: inviteText
+        });
+      } catch (err) {
+        console.log("Partage annulé", err);
+      }
+    } else {
+      // 💻 Fallback desktop (copie ou WhatsApp)
+      const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
+      window.open(url, "_blank");
+    }
+  });
+}
+
+
+/*
+const isAdmin = auth.currentUser.uid === meta.createdBy;
+const hasInviteCode = !!meta.inviteCode;
+const isClosed = meta.status === 'closed';
+
+sessionMeta.innerHTML = `
+  <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
+  <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
+  <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
+`;
+*/
+// Afficher ou cacher bouton Clôturer selon statut
+closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
+
+// Partage uniquement si admin et code existant
+/*
+if (isAdmin && hasInviteCode) {
+  const shareDiv = document.createElement('div');
+  shareDiv.style.marginTop = '12px';
+
+  const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}
+Lien vers l'application : https://monapp.exemple.com`;
+
+  // WhatsApp
+  const waBtn = document.createElement('button');
+  waBtn.className = 'btn small';
+  waBtn.textContent = 'Partager WhatsApp';
+  waBtn.addEventListener('click', () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
+    window.open(url, "_blank");
+  });
+
+  // Telegram
+  const tgBtn = document.createElement('button');
+  tgBtn.className = 'btn small';
+  tgBtn.textContent = 'Partager Telegram';
+  tgBtn.addEventListener('click', () => {
+    const url = `https://t.me/share/url?url=${encodeURIComponent('https://monapp.exemple.com')}&text=${encodeURIComponent(inviteText)}`;
+    window.open(url, "_blank");
+  });
+
+  // Email
+  const mailBtn = document.createElement('button');
+  mailBtn.className = 'btn small';
+  mailBtn.textContent = 'Partager Email';
+  mailBtn.addEventListener('click', () => {
+    const subject = `Invitation à la campagne ${meta.name}`;
+    const body = inviteText;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+
+  // Ajouter boutons au div
+  [waBtn, tgBtn, mailBtn].forEach(btn => {
+    btn.style.marginRight = '6px';
+    shareDiv.appendChild(btn);
+  });
+
+  sessionMeta.appendChild(shareDiv);
+}
+*/
   // Charger les métadonnées
+  /*
   const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
   if (!metaSnap.exists()) return alert('Session introuvable');
   const meta = metaSnap.data();
 
   sessionMeta.innerHTML = `
-    <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
-    <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
-    <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
-  `;
+  <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
+  <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
+  <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
+  ${meta.inviteCode ? `
+    <div style="margin-top:8px">
+      <button id="shareWhatsappBtn" class="btn small">Partager WhatsApp</button>
+      <button id="shareMailBtn" class="btn small">Partager Email</button>
+    </div>
+  ` : ''}
+`;
+
 
   // Afficher ou cacher bouton Clôturer selon statut
   const isAdmin = auth.currentUser.uid === meta.createdBy;
@@ -521,7 +679,7 @@ async function openSession(session) {
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     });
   }
-
+*/
 
   //User can Access Discussion
 const canAccessDiscussion = await userCanAccessDiscussion(session);
@@ -587,11 +745,12 @@ if (canAccessDiscussion) {
     if (inviteBox) {
       inviteBox.classList.add('is-closed');
     }
+    
     return;
   }
 
 
-
+/*
   document.getElementById("sendMessageBtn").onclick = async () => {
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
@@ -613,7 +772,28 @@ if (canAccessDiscussion) {
 
     input.value = "";
   };
+*/
+document.getElementById("sendMessageBtn").onclick = async () => {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (!text) return;
 
+  const user = auth.currentUser;
+  if (!user || !currentSessionId) return;
+
+  await addDoc(
+    collection(db, SESSIONS_COLLECTION, currentSessionId, "messages"),
+    {
+      text,
+      authorId: user.uid,
+      authorPseudo: user.displayName || "Utilisateur",
+      photoURL: user.photoURL || "default.jpg",
+      createdAt: serverTimestamp()
+    }
+  );
+
+  input.value = "";
+};
   // --- Campagne ouverte ---
   if (isAdmin && allFinished) {
     closeBtn.style.display = 'inline-block';
@@ -1105,10 +1285,14 @@ modal.querySelector('#ns_create').onclick = async () => {
     }
   }
 
+  /*
   const inviteCode = genCode
     ? Math.random().toString(36).slice(2, 8).toUpperCase()
-    : null;
+    : null;*/
 
+    const inviteCode = !isPublic
+  ? Math.random().toString(36).slice(2, 8).toUpperCase()
+  : null;
   try {
     const sessionId = await createSession({
       name,
@@ -1251,25 +1435,50 @@ async function renderZikrFormulas(formules, sessionId) {
       ...d.data()
     }));
     
-    const isOwner = contributions.uid === auth.currentUser.uid;
+    
 
     const contributorsHtml = contributions.length
-    ? contributions.map(c => {
-        const isOwner = c.uid === auth.currentUser.uid;
-        const alreadyFinished = !!c.isFinished; // vrai si déjà terminé
-        return `
-          <div class="zikr-contributor" data-uid="${c.uid}">
-            <span class="contrib-name">${c.pseudo}</span>
-            <span class="contrib-value">${c.value}</span>
+    ? `
+      <table class="zikr-table zikr-contribs-table">
+        ${contributions.map(c => {
+          const isOwner = c.uid === auth.currentUser.uid;
+          const alreadyFinished = !!c.isFinished;
   
-            <div class="contrib-actions">
-              <button class="contrib-btn edit" ${!isOwner ? 'disabled' : ''} title="${!isOwner ? '' : 'Modifier la contribution'}" data-action="edit">✏️</button>
-              <button class="contrib-btn finish" ${!isOwner || alreadyFinished ? 'disabled' : ''} title="${alreadyFinished ? 'Déjà terminé' : !isOwner ? '':'Marquer comme terminé'}">✔️</button>
-            </div>
-          </div>
-        `;
-      }).join('')
+          return `
+            <tr class="zikr-contributor" data-uid="${c.uid}">
+              <!-- Nom à gauche -->
+              <td class="label contrib-name">
+                ${c.pseudo}
+              </td>
+  
+              <!-- Valeur à droite -->
+              <td class="value contrib-value">
+                ${c.value}
+              </td>
+  
+              <!-- Actions à droite -->
+              <td class="value contrib-actions">
+                <button
+                  class="contrib-btn edit"
+                  data-action="edit"
+                  ${!isOwner || alreadyFinished ? 'disabled' : ''}
+                  title="${!isOwner ? '' : alreadyFinished ? '' : 'Modifier la contribution'}"
+                >✏️</button>
+  
+                <button
+                  class="contrib-btn finish"
+                  data-action="finish"
+                  ${!isOwner || alreadyFinished ? 'disabled' : ''}
+                  title="${alreadyFinished && isOwner ? 'Déjà terminé' : !isOwner ? '' : 'Marquer comme terminé'}"
+                >✔️</button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </table>
+    `
     : `<em class="no-contrib">Aucun contributeur</em>`;
+  
   
 
 const card = document.createElement('div');
@@ -1278,7 +1487,7 @@ card.className = `card juz zikr zikr-card ${status.key}`;
 
 
 card.dataset.formuleId = f.id;
-
+/*
 card.innerHTML = `
     <div class="juz-header zikr-header">
     <span class="zikr-title">
@@ -1292,10 +1501,13 @@ card.innerHTML = `
 
   <div class="zikr-body">
 
-    <button class="toggle-contribs" type="button">
-      <span class="icon">👥</span>
+
+    <button class="toggle-contribs" type="button" aria-expanded="false">
+      <i class="fas fa-users"></i>
       <span class="label">Contributeurs</span>
+      <i class="fas fa-chevron-down chevron"></i>
     </button>
+
 
     <div class="zikr-contribs hidden">
       ${contributorsHtml}
@@ -1325,6 +1537,66 @@ card.innerHTML = `
     </div>
   </div>
 `;
+*/
+
+card.innerHTML = `
+<div class="juz-header zikr-header">
+  <span class="zikr-title">
+    ${f.name} (${objectif})
+  </span>
+
+  <span class="juz-badge badge-${status.key}">
+    ${status.label}
+  </span>
+</div>
+
+<div class="zikr-body">
+
+  <button class="toggle-contribs" type="button" aria-expanded="false">
+    <i class="fas fa-users"></i>
+    <span class="label">Contributeurs</span>
+    <i class="fas fa-chevron-down chevron"></i>
+  </button>
+
+  <div class="zikr-contribs hidden">
+    ${contributorsHtml}
+    
+    <hr>
+
+    <!-- Tableau sans bordure -->
+<table class="zikr-table zikr-totals-table">
+  <tr>
+    <td class="label">Total choisi</td>
+    <td class="value"><strong>${current}</strong></td>
+  </tr>
+  <tr>
+    <td class="label">Total terminé</td>
+    <td class="value"><strong>${finished}</strong></td>
+  </tr>
+
+  <!-- Input pleine largeur -->
+  <tr>
+    <td colspan="2">
+      <div class="zikr-input-wrapper" data-reste="${reste}">
+        <input
+          type="number"
+          min="1"
+          max="${reste}"
+          placeholder="choix"
+          class="zikr-input"
+          data-formule-id="${f.id}"
+          ${reste === 0 ? 'disabled' : ''}
+        />
+      </div>
+    </td>
+  </tr>
+</table>
+
+
+
+  </div>
+</div>
+`;
 
 card.querySelectorAll('.contrib-btn.finish')
   .forEach(btn => {
@@ -1348,14 +1620,18 @@ card.querySelectorAll('.contrib-btn.finish')
 
     // 🔽 toggle contributeurs
 
-
-      const toggleBtn = card.querySelector('.toggle-contribs');
+const toggleBtn = card.querySelector('.toggle-contribs');
 const contribsBox = card.querySelector('.zikr-contribs');
 
 toggleBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+
+  const isOpen = !contribsBox.classList.contains('hidden');
+
   contribsBox.classList.toggle('hidden');
+  toggleBtn.setAttribute('aria-expanded', String(!isOpen));
 });
+
 
 
     container.appendChild(card);
@@ -1448,6 +1724,19 @@ function updateLocalContributorUI(card, value) {
   }
 }
 
+document.querySelectorAll('.auth-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+
 
 document.getElementById('validateZikrChoices').addEventListener('click', async () => {
 
@@ -1475,6 +1764,8 @@ document.getElementById('validateZikrChoices').addEventListener('click', async (
   });
 
 //FIN
+
+
 
 async function validateZikrFormula(sessionId, formulaId, card) {
   const user = auth.currentUser;
@@ -1656,7 +1947,7 @@ function openInviteCodeModal() {
 
     setTimeout(() => {
       document.body.removeChild(modal);
-      loadUserSessions();
+      loadSessions();
     }, 1000);
   };
 }
@@ -1670,6 +1961,16 @@ document.getElementById("joinWithCodeBtn")
 (async function init() {
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      console.log("Connexion Google via redirect OK", result.user);
+    }
+  } catch (e) {
+    console.error("Erreur Google redirect", e);
+  }
+
+  
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       showPage('home');
@@ -1840,19 +2141,30 @@ function refreshGrid() {
 }
 
 
-const scrollTopBtn = document.getElementById("scrollTopBtn");
+const scrollTopBtn = document.getElementById('scrollTopBtn');
+const scrollDownBtn = document.getElementById('scrollDownBtn');
 
+// Afficher ou cacher les boutons selon scroll
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 100) {
+    scrollTopBtn.style.display = 'flex';
+    scrollDownBtn.style.display = 'flex';
+  } else {
+    scrollTopBtn.style.display = 'none';
+    scrollDownBtn.style.display = 'none';
+  }
+});
 
+// Scroll top
+scrollTopBtn.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 
-if (scrollTopBtn) {
-  window.addEventListener("scroll", () => {
-    scrollTopBtn.style.display = window.scrollY > 300 ? "block" : "none";
-  });
+// Scroll down (vers le bas de la page)
+scrollDownBtn.addEventListener('click', () => {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+});
 
-  scrollTopBtn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
-}
 
 
 
@@ -1966,7 +2278,7 @@ async function userHasJuzInSession(sessionId, userId) {
   return !snap.empty;
 }
 
-
+/*
 function loadMessages(sessionId) {
   const list = document.getElementById("messagesList");
   list.innerHTML = "";
@@ -1999,7 +2311,172 @@ function loadMessages(sessionId) {
     list.scrollTop = list.scrollHeight;
   });
 }
+*/
 
+/*
+function loadMessages(sessionId) {
+  const list = document.getElementById("messagesList");
+  list.innerHTML = "";
+
+  const q = query(
+    collection(db, SESSIONS_COLLECTION, sessionId, "messages"),
+    orderBy("createdAt", "asc")
+  );
+
+  onSnapshot(q, snap => {
+    list.innerHTML = "";
+
+    snap.forEach(doc => {
+      const m = doc.data();
+      const isCurrentUser = auth.currentUser && m.authorId === auth.currentUser.uid;
+
+      const div = document.createElement("div");
+      div.className = `message ${isCurrentUser ? "me" : "other"}`;
+      div.innerHTML = `
+        <div class="message-header">
+          ${!isCurrentUser ? `<img src="${m.photoURL || 'default.jpg'}" />` : ""}
+          <strong>${m.authorPseudo}</strong>
+          <small>${m.createdAt?.toDate().toLocaleString()}</small>
+        </div>
+        <div class="message-text">${m.text}</div>
+      `;
+
+      list.appendChild(div);
+    });
+
+    list.scrollTop = list.scrollHeight;
+  });
+}
+*/
+/*
+function formatMessageDate(ts) {
+  if (!ts) return "";
+  const d = ts.toDate();
+  const now = new Date();
+
+  const diffTime = now - d;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  const options = { day: 'numeric', month: 'short' };
+  const weekday = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return weekday[d.getDay()];
+  return `${weekday[d.getDay()]} ${d.toLocaleDateString('fr-FR', options)}`;
+}
+
+function loadMessages(sessionId) {
+  const list = document.getElementById("messagesList");
+  list.innerHTML = "";
+
+  const q = query(
+    collection(db, SESSIONS_COLLECTION, sessionId, "messages"),
+    orderBy("createdAt", "asc")
+  );
+
+  let lastDate = "";
+
+  onSnapshot(q, snap => {
+    list.innerHTML = "";
+    lastDate = "";
+
+    snap.forEach(doc => {
+      const m = doc.data();
+      const isCurrentUser = auth.currentUser && m.authorId === auth.currentUser.uid;
+
+      // Formater la date pour le badge
+      const dateStr = formatMessageDate(m.createdAt);
+      let dateBadge = "";
+      if (dateStr !== lastDate) {
+        dateBadge = `<div class="date-badge">${dateStr}</div>`;
+        lastDate = dateStr;
+      }
+
+      const div = document.createElement("div");
+      div.className = `message ${isCurrentUser ? "me" : "other"}`;
+      div.innerHTML = `
+        ${dateBadge}
+        <div class="message-header">
+          ${!isCurrentUser ? `<img src="${m.photoURL || 'default.jpg'}" />` : ""}
+          <strong>${m.authorPseudo}</strong>
+          <small>${m.createdAt?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+        </div>
+        <div class="message-text">${m.text}</div>
+      `;
+
+      list.appendChild(div);
+    });
+
+    list.scrollTop = list.scrollHeight;
+  });
+}
+*/
+
+function formatMessageDate(ts) {
+  if (!ts) return "";
+  const d = ts.toDate();
+  const now = new Date();
+
+  const diffTime = now - d;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  const options = { day: 'numeric', month: 'short' };
+  const weekday = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return weekday[d.getDay()];
+  return `${weekday[d.getDay()]} ${d.toLocaleDateString('fr-FR', options)}`;
+}
+
+function loadMessages(sessionId) {
+  const list = document.getElementById("messagesList");
+  list.innerHTML = "";
+
+  const q = query(
+    collection(db, SESSIONS_COLLECTION, sessionId, "messages"),
+    orderBy("createdAt", "asc")
+  );
+
+  let lastDate = "";
+
+  onSnapshot(q, snap => {
+    list.innerHTML = "";
+    lastDate = "";
+
+    snap.forEach(doc => {
+      const m = doc.data();
+      const isCurrentUser = auth.currentUser && m.authorId === auth.currentUser.uid;
+
+      // Badge de date seulement si changement de jour
+      const dateStr = formatMessageDate(m.createdAt);
+      let dateBadge = "";
+      if (dateStr !== lastDate) {
+        dateBadge = `<div class="date-badge">${dateStr}</div>`;
+        lastDate = dateStr;
+      }
+
+      const div = document.createElement("div");
+      div.className = `message ${isCurrentUser ? "me" : "other"}`;
+      div.innerHTML = `
+        ${dateBadge}
+        <div class="message-body">
+          ${!isCurrentUser ? `<img src="${m.photoURL || 'default.jpg'}" />` : ""}
+          <div class="message-content">
+            <strong>${m.authorPseudo}</strong>
+            <div class="message-text">${m.text}</div>
+            <small class="message-time">${m.createdAt?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+          </div>
+        </div>
+      `;
+
+      list.appendChild(div);
+    });
+
+    list.scrollTop = list.scrollHeight;
+  });
+}
 
 function initSessionTabs(session) {
   const tabJuz = document.getElementById("tabJuz");

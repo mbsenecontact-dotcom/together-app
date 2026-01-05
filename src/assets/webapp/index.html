@@ -6,6 +6,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ReadTogether | Unir nos lectures</title>
   <link rel="stylesheet" href="style.css" />
+  <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
+
 </head>
 
 <body>
@@ -33,7 +38,7 @@
         <button id="homeConnectBtn" class="btn btn-primary" aria-haspopup="true">Se connecter</button>
       </div>
     </section>
-
+<!--
     <section id="authPage" class="page" hidden>
       <div id="emailAuth" class="card">
         <h3>Connexion Email</h3>
@@ -47,7 +52,43 @@
         <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
       </div>
     </section>
+  -->
 
+  <section id="authPage" class="page" hidden>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="loginPanel">Se connecter</button>
+      <button class="auth-tab" data-tab="signupPanel">S'inscrire</button>
+    </div>
+  
+    <!-- Connexion -->
+    <div id="loginPanel" class="auth-panel active">
+      <div class="card">
+        <h3>Connexion Email</h3>
+        <input id="emailInput" type="email" placeholder="Adresse email" />
+        <input id="passwordInput" type="password" placeholder="Mot de passe" />
+        <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
+        <button id="googleLogin" class="btn btn-google">Connexion avec Google</button>
+        <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
+        <!-- Feedback ici -->
+        <div id="loginFeedback" class="auth-feedback"></div>
+      </div>
+    </div>
+  
+    <!-- Inscription -->
+    <div id="signupPanel" class="auth-panel">
+      <div class="card">
+        <h3>Créer un compte</h3>
+        <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
+        <input id="signupEmailInput" type="email" placeholder="Adresse email" />
+        <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
+        <button id="emailSignupBtn" class="btn btn-primary">Créer un compte</button>
+        <!-- Feedback ici -->
+        <div id="signupFeedback" class="auth-feedback"></div>
+      </div>
+    </div>
+  </section>
+  
+  
     <section id="dashboard" class="page" hidden>
       <div id="sessionsList" class="card">
         <div class="campagne-header">
@@ -148,7 +189,7 @@
 
 
 
-
+<!--
         <div id="discussionSection" class="card hidden">
 
           <h4>Discussion de la campagne</h4>
@@ -161,8 +202,28 @@
               Envoyer
             </button>
           </div>
-        </div>
+        </div>-->
 
+
+        <div id="discussionSection" class="card hidden">
+          <h4>Discussion de la campagne</h4>
+        
+          <div id="messagesList" class="messages"></div>
+        
+<!-- Formulaire de message -->
+<div id="messageForm" class="message-form">
+  <input id="messageInput" class="zikr-input" placeholder="Écrire un message…" maxlength="500" />
+  <button id="sendMessageBtn" class="btn btn-icon">
+    <!-- Icône Telegram -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon">
+      <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+    </svg>
+  </button>
+</div>
+
+          
+        </div>
+        
       </div>
 
     </section>
@@ -170,9 +231,18 @@
   </main>
 
 
-  <button id="scrollTopBtn" aria-label="Retour en haut">
-    ⬆️
-  </button>
+
+
+  <!-- Scroll Up -->
+<button id="scrollTopBtn" class="scroll-btn" aria-label="Retour en haut">
+  ⬆️
+</button>
+
+<!-- Scroll Down -->
+<button id="scrollDownBtn" class="scroll-btn" aria-label="Descendre">
+  ⬇️
+</button>
+
 
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
@@ -180,60 +250,33 @@
 
 
   <div id="bottomActionBtn" class="bottom-actions" style="display:none">
+
     <!-- Rejoindre -->
     <button id="joinWithCodeBtn" class="bottom-btn">
       <span class="icon-circle">
-        <svg viewBox="0 0 24 24" class="icon">
-          <path d="M16 11c1.66 0 3 1.34 3 3v1H5v-1c0-1.66 1.34-3 3-3
-        0 0 1.5 1 4 1s4-1 4-1z" />
-          <circle cx="12" cy="7" r="3" />
-          <circle cx="6.5" cy="8.5" r="2" />
-          <circle cx="17.5" cy="8.5" r="2" />
-        </svg>
+        <i class="fa-solid fa-users icon"></i>
       </span>
       <span class="label">Rejoindre</span>
     </button>
+  
     <!-- Nouvelle Campagne -->
     <button id="newSessionBtn" class="bottom-btn">
       <span class="icon-circle">
-        <svg viewBox="0 0 24 24" class="icon">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <i class="fa-solid fa-plus icon"></i>
       </span>
       <span class="label">Démarrer</span>
     </button>
-    <!-- Paramètres id="settingsBtn" -->
+  
+    <!-- Paramètres -->
     <button id="profileEdition" class="bottom-btn">
       <span class="icon-circle">
-        <!-- Icône engrenage -->
-        <svg viewBox="0 0 24 24" class="icon">
-          <path d="M19.14 12.94c.04-.31.06-.63.06-.94
-                 0-.32-.02-.63-.06-.94l2.03-1.58
-                 c.18-.14.23-.41.12-.61l-1.92-3.32
-                 c-.11-.2-.36-.28-.57-.2l-2.39.96
-                 c-.5-.38-1.04-.69-1.63-.92l-.36-2.54
-                 c-.03-.22-.22-.38-.44-.38h-3.84
-                 c-.22 0-.41.16-.44.38l-.36 2.54
-                 c-.59.23-1.13.54-1.63.92l-2.39-.96
-                 c-.21-.08-.46 0-.57.2L2.65 8.87
-                 c-.11.2-.06.47.12.61l2.03 1.58
-                 c-.04.31-.06.62-.06.94
-                 0 .31.02.63.06.94l-2.03 1.58
-                 c-.18.14-.23.41-.12.61l1.92 3.32
-                 c.11.2.36.28.57.2l2.39-.96
-                 c.5.38 1.04.69 1.63.92l.36 2.54
-                 c.03.22.22.38.44.38h3.84
-                 c.22 0 .41-.16.44-.38l.36-2.54
-                 c.59-.23 1.13-.54 1.63-.92l2.39.96
-                 c.21.08.46 0 .57-.2l1.92-3.32
-                 c.11-.2.06-.47-.12-.61l-2.03-1.58z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
+        <i class="fa-solid fa-gear icon"></i>
       </span>
-      <span class="label">Paramètrer</span>
+      <span class="label">Paramétrer</span>
     </button>
-
+  
   </div>
+  
 
   </div>
 

@@ -479,19 +479,7 @@ main {
 }
 
 
-/* Bouton + */
-.btn-icon {
-  height: 36px;             /* 🔥 même hauteur que les autres */
-  width: 36px;
-  min-width: 36px;
-  border-radius: 50%;
-  background: #22c55e;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;
-}
+
 
 .btn-icon:hover {
   background: rgba(0, 0, 0, 0.08);
@@ -540,25 +528,46 @@ main {
 
 
 /* -------- Bouton retour en haut -------- */
-#scrollTopBtn {
+/* Boutons scroll fixed moderne */
+.scroll-btn {
   position: fixed;
-  bottom: 70px;
-  right: 18px;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
   background: #fff;
   box-shadow: 0 6px 18px rgba(0,0,0,0.15);
   cursor: pointer;
-  font-size: 18px;
-  display: none;
-  z-index: var(--z-scroll-btn);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200; /* au-dessus du formulaire */
+  transition: transform 0.2s, background 0.2s;
 }
 
-#scrollTopBtn:active {
+/* Hover & active */
+.scroll-btn:hover {
+  transform: scale(1.05);
+  background: #f0f0f0;
+}
+
+.scroll-btn:active {
   transform: scale(0.95);
 }
+
+/* Position scroll up */
+#scrollTopBtn {
+  bottom: calc(var(--bottom-bar-height) + 72px);
+  right: 18px;
+}
+
+/* Position scroll down */
+#scrollDownBtn {
+  bottom: calc(var(--bottom-bar-height) + 123px); /* juste au-dessus du scroll up */
+  right: 18px;
+}
+
 
 
 .juz {
@@ -649,10 +658,28 @@ main {
   background: var(--wa-green);
   border-radius: 50%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: center;        /* centre verticalement */
+  justify-content: center;    /* centre horizontalement */
   margin-bottom: 4px;
+  font-size: 0;               /* supprime espace inline autour de l'icône */
 }
+
+.icon-circle .icon {
+  color: white;
+  font-size: 18px;       /* ajuste ici selon le rendu */
+  display: block;        /* empêche le décalage baseline */
+  line-height: 1;        /* centre verticalement */
+  transform: translateY(1px); /* ajuste +1px vers le bas */
+}
+
+
+/* effet actif sur le bouton */
+.bottom-btn:active .icon-circle {
+  background: #1ebe5d;
+}
+
+
+
 
 .icon {
   width: 22px;
@@ -668,10 +695,6 @@ main {
 .label {
   font-size: 12px;
   color: #333;
-}
-
-.bottom-btn:active .icon-circle {
-  background: #1ebe5d;
 }
 
 
@@ -773,21 +796,19 @@ main {
 }
 
 
-.messages {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 8px;
-}
-
-.message {
-  margin-bottom: 10px;
+.message .meta {
+  display: block;
+  font-size: 10px;
+  color: #666;
+  margin-top: 4px;
 }
 
 .message-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 0.8em;
+  color: #555;
 }
 
 .message-header img {
@@ -797,10 +818,79 @@ main {
 }
 
 .message-text {
-  background: #f1f1f1;
-  padding: 8px 10px;
-  border-radius: 10px;
-  margin-left: 30px;
+  margin-top: 2px;
+}
+
+.date-badge {
+  text-align: center;
+  font-size: 0.75em;
+  color: #555;
+  background-color: #e9ecef;
+  border-radius: 12px;
+  padding: 2px 8px;
+  margin: 6px auto;
+  display: inline-block;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-badge {
+  text-align: center;
+  font-size: 0.75em;
+  color: #555;
+  background-color: #e9ecef;
+  border-radius: 12px;
+  padding: 2px 8px;
+  margin: 8px auto;
+  display: inline-block;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+}
+
+.message.me {
+  align-self: flex-end;
+  background-color: #d1ffd6;
+  border-radius: 12px 12px 0 12px;
+  padding: 6px 10px;
+}
+
+.message.other {
+  align-self: flex-start;
+  background-color: #f0f0f0;
+  border-radius: 12px 12px 12px 0;
+  padding: 6px 10px;
+}
+
+.message-body {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.message-body img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-time {
+  font-size: 0.7em;
+  color: #555;
+  text-align: right;
+  margin-top: 2px;
 }
 
 
@@ -1146,9 +1236,23 @@ main {
   gap: 6px;
 }
 
-.zikr-input {
-  width: 90px;
+
+
+
+.contrib-actions {
+  white-space: nowrap;
+  display: flex;
+  gap: 4px;
 }
+
+
+
+.contrib-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
 
 .zikr-contribs {
   padding: 8px;
@@ -1162,7 +1266,7 @@ main {
 .toggle-contribs {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
   padding: 6px 10px;
   border: none;
@@ -1209,17 +1313,13 @@ main {
 }
 
 
-.contrib-actions {
-  display: flex;
-  gap: 4px;
-}
-
+/* Boutons d'action */
 .contrib-btn {
+  background: none;
   border: none;
-  background: transparent;
   cursor: pointer;
-  font-size: 0.9rem;
-  padding: 2px;
+  font-size: 14px;
+  padding: 0 2px;
 }
 
 .contrib-btn:hover {
@@ -1234,6 +1334,10 @@ main {
   color: #007bff;
 }
 
+.zikr-contribs-table {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
 
 .zikr-contributor.finished {
   opacity: 0.6;
@@ -1243,4 +1347,204 @@ main {
 .contrib-btn[disabled] {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+
+
+.toggle-contribs .chevron {
+  transition: transform 0.2s ease;
+}
+
+.toggle-contribs[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+
+
+
+
+/* Texte à gauche */
+.zikr-table .label {
+  text-align: left;
+  color: #444;
+}
+
+/* Chiffres à droite */
+.zikr-table .value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+
+
+/* Placeholder centré */
+.zikr-input::placeholder {
+  text-align: center;
+  color: #999; /* optionnel */
+}
+
+
+
+
+
+
+
+
+
+.zikr-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.zikr-table td {
+  padding: 2px 4px;
+}
+
+
+
+.zikr-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.zikr-input {
+  width: 100%;
+  padding: 4px 38px 4px 6px; /* espace pour / reste */
+  font-size: 14px;
+  text-align: right;
+  box-sizing: border-box;
+}
+
+
+
+/* suffixe / reste toujours visible */
+.zikr-input-wrapper::after {
+  content: "/ " attr(data-reste);
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #777;
+  pointer-events: none;
+}
+
+/* placeholder centré quand vide */
+.zikr-input:placeholder-shown {
+  text-align: center;
+}
+
+
+.auth-card {
+  max-width: 360px;
+  margin: auto;
+}
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 12px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  color: #777;
+  border-bottom: 2px solid transparent;
+}
+
+.auth-tab.active {
+  color: #25d366;
+  border-bottom-color: #25d366;
+}
+
+.auth-panel {
+  display: none;
+}
+
+.auth-panel.active {
+  display: block;
+}
+
+.auth-panel input {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+
+.auth-feedback {
+  margin-top: 8px;
+  font-size: 0.9em;
+  min-height: 1.2em;
+}
+
+.auth-feedback.error {
+  color: #d9534f; /* rouge */
+}
+
+.auth-feedback.success {
+  color: #5cb85c; /* vert */
+}
+
+/* Formulaire toujours visible au-dessus de la barre d’action */
+.message-form {
+  position: fixed;
+  bottom: var(--bottom-bar-height); /* 🔥 juste au-dessus de la barre */
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #eee;
+  background: #fff;
+  z-index: calc(var(--z-bottom-bar) + 1); /* au-dessus de la barre */
+}
+
+/* Assure que le contenu principal ne soit pas caché */
+main, #discussionSection {
+  padding-bottom: calc(var(--bottom-bar-height) + 80px); /* formulaire + marge */
+}
+
+
+/* Input prend toute la largeur */
+#messageInput {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+
+/* Bouton avec icône Telegram */
+.btn-icon {
+  height: 44px;
+  width: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  background: #0088cc; /* couleur Telegram */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-icon .icon {
+  width: 22px;
+  height: 22px;
+  fill: white;
+}
+
+
+.share-btn.icon-only {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
