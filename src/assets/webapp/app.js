@@ -7,10 +7,8 @@ import {
 
 
 import {
-  signInWithPopup, signOut, 
+  signOut, 
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, sendEmailVerification, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -32,7 +30,7 @@ const el = {
   pseudoInput: document.getElementById('pseudoInput'),
   emailLoginBtn: document.getElementById('emailLoginBtn'),
   emailSignupBtn: document.getElementById('emailSignupBtn'),
-  googleLogin: document.getElementById('googleLogin'),
+  //googleLogin: document.getElementById('googleLogin'),
   forgotPassword: document.getElementById('forgotPassword'),
   authPage: document.getElementById('authPage'),
   home: document.getElementById('home'),
@@ -68,6 +66,104 @@ const zikrGrid = document.getElementById('zikrView'); // grille Zikr
 const juzSelectionBar = document.getElementById('juzSelectionBar'); // si tu veux aussi cacher pour Zikr
 
 const sessionView = document.getElementById('sessionView');
+
+
+/*
+const googleProvider = new GoogleAuthProvider();
+
+el.googleLogin.addEventListener('click', async () => {
+  try {
+    // 1️⃣ Tentative popup (desktop + mobile récents)
+    await signInWithPopup(auth, googleProvider);
+  } catch (err) {
+    // 2️⃣ Popup bloquée → fallback redirect (mobile / WebView)
+    console.warn('Popup bloquée, fallback redirect', err);
+    await signInWithRedirect(auth, googleProvider);
+  }
+});*/
+
+
+
+
+
+/* ---------- Initialization ---------- */
+
+
+
+  
+(async function init() {
+  // by design: DO NOT auto-create default session or populate DB
+  // only show sessions after login
+  onAuthStateChanged(auth, async (user) => {
+    console.log('User =='+user)
+    if (!user) {
+      showPage('home');
+      el.sessionsDiv.innerHTML = '';
+      return;
+    }
+
+    // email/password non vérifié
+    if (
+      user.providerData.some(p => p.providerId === 'password') &&
+      !user.emailVerified
+    ) {
+      alert('Veuillez vérifier votre email.');
+      await signOut(auth);
+      return;
+    }
+
+    showPage('dashboard');
+    document.getElementById('homeConnectBtn').style.display = 'none';
+
+    document.getElementById('bottomActionBtn').style.display = 'flex';
+    document.getElementById('menuLogout').style.display = 'inline-block';
+
+
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(userRef);
+
+    let pseudo = user.displayName;
+
+    // 🟢 Google → pseudo auto
+    if (!pseudo) {
+      pseudo = generatePseudo();
+      await updateProfile(user, { displayName: pseudo });
+    }
+
+    const userData = {
+      uid: user.uid,
+      pseudo,
+      email: user.email,
+      photoURL: user.photoURL || 'default.jpg',
+      lastLogin: serverTimestamp()
+    };
+
+    if (!snap.exists()) {
+      userData.createdAt = serverTimestamp();
+      await setDoc(userRef, userData);
+    } else {
+      await setDoc(userRef, userData, { merge: true });
+    }
+
+    document.querySelector('#menuUserAvatar img').src = user.photoURL || 'default.jpg';
+
+
+    await loadSessions();
+  });
+
+
+  // wire UI
+  document.getElementById('homeConnectBtn').addEventListener('click', () => showPage('authPage'));
+  el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
+  el.menuLogoutBtn?.addEventListener('click', async () => {
+    await signOut(auth);
+    showPage('home');
+    document.getElementById('homeConnectBtn').style.display = 'inline-block';
+    document.getElementById('bottomActionBtn').style.display = 'none';
+    document.getElementById('menuLogout').style.display = 'none';
+  });
+
+})();
 
 
 tabCoran.onclick = () => {
@@ -112,17 +208,6 @@ tabZikr.onclick = () => {
 
 /* ---------- Helpers ---------- */
 
-function mustUseRedirect() {
-  return window.matchMedia("(display-mode: standalone)").matches;
-}
-
-function canUsePopup() {
-  return (
-    typeof window !== "undefined" &&
-    window.innerWidth > 768 &&
-    !window.matchMedia("(display-mode: standalone)").matches
-  );
-}
 
 
 function showPage(id) {
@@ -147,18 +232,10 @@ function showAuthFeedback(type, message, panel = 'login') {
 }
 
 // Google
-el.googleLogin?.addEventListener("click", async () => {
-  try {
-    if (canUsePopup()) {
-      await signInWithPopup(auth, provider);
-    } else {
-      await signInWithRedirect(auth, provider);
-    }
-  } catch (e) {
-    console.error(e);
-    showAuthFeedback("error", e.message, "login");
-  }
-});
+
+
+
+
 
 
 // Inscription Email
@@ -478,7 +555,7 @@ function renderSessions(list) {
 let currentSessionId = null;
 let currentSession = null; // variable globale
 let unsubscribers = [];
-//const sessionHeader = document.getElementById('sessionHeader');
+
 const sessionTitle = document.getElementById('sessionTitle');
 const sessionMeta = document.getElementById('sessionMeta');
 const stats = document.getElementById('stats');
@@ -501,10 +578,6 @@ async function openSession(session) {
     stats.style.display = 'none';
     closeBtn.textContent = 'Clôturer la série de Zikr';
 
-    // Affiche uniquement la grille Zikr
-    //document.getElementById('zikrView').classList.remove('hidden');
-    //document.getElementById('grid').classList.add('hidden');
-    //document.getElementById('juzSelectionBar').classList.add('hidden');
     document.getElementById('sessionView').classList.remove('hidden');
     showZikrCampaign(session);
 
@@ -514,9 +587,6 @@ async function openSession(session) {
     closeBtn.textContent = 'Clôturer la campagne';
 
     // Affiche uniquement la grille Juz
-   // document.getElementById('grid').classList.remove('hidden');
-    //document.getElementById('zikrView').classList.add('hidden');
-   // document.getElementById('juzSelectionBar').classList.remove('hidden');
    document.getElementById('sessionView').classList.remove('hidden');
    
     showCoranCampaign(session);
@@ -577,109 +647,9 @@ if (isAdmin && hasInviteCode) {
   });
 }
 
-
-/*
-const isAdmin = auth.currentUser.uid === meta.createdBy;
-const hasInviteCode = !!meta.inviteCode;
-const isClosed = meta.status === 'closed';
-
-sessionMeta.innerHTML = `
-  <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
-  <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
-  <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
-`;
-*/
 // Afficher ou cacher bouton Clôturer selon statut
 closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
 
-// Partage uniquement si admin et code existant
-/*
-if (isAdmin && hasInviteCode) {
-  const shareDiv = document.createElement('div');
-  shareDiv.style.marginTop = '12px';
-
-  const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}
-Lien vers l'application : https://monapp.exemple.com`;
-
-  // WhatsApp
-  const waBtn = document.createElement('button');
-  waBtn.className = 'btn small';
-  waBtn.textContent = 'Partager WhatsApp';
-  waBtn.addEventListener('click', () => {
-    const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
-    window.open(url, "_blank");
-  });
-
-  // Telegram
-  const tgBtn = document.createElement('button');
-  tgBtn.className = 'btn small';
-  tgBtn.textContent = 'Partager Telegram';
-  tgBtn.addEventListener('click', () => {
-    const url = `https://t.me/share/url?url=${encodeURIComponent('https://monapp.exemple.com')}&text=${encodeURIComponent(inviteText)}`;
-    window.open(url, "_blank");
-  });
-
-  // Email
-  const mailBtn = document.createElement('button');
-  mailBtn.className = 'btn small';
-  mailBtn.textContent = 'Partager Email';
-  mailBtn.addEventListener('click', () => {
-    const subject = `Invitation à la campagne ${meta.name}`;
-    const body = inviteText;
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  });
-
-  // Ajouter boutons au div
-  [waBtn, tgBtn, mailBtn].forEach(btn => {
-    btn.style.marginRight = '6px';
-    shareDiv.appendChild(btn);
-  });
-
-  sessionMeta.appendChild(shareDiv);
-}
-*/
-  // Charger les métadonnées
-  /*
-  const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
-  if (!metaSnap.exists()) return alert('Session introuvable');
-  const meta = metaSnap.data();
-
-  sessionMeta.innerHTML = `
-  <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
-  <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
-  <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
-  ${meta.inviteCode ? `
-    <div style="margin-top:8px">
-      <button id="shareWhatsappBtn" class="btn small">Partager WhatsApp</button>
-      <button id="shareMailBtn" class="btn small">Partager Email</button>
-    </div>
-  ` : ''}
-`;
-
-
-  // Afficher ou cacher bouton Clôturer selon statut
-  const isAdmin = auth.currentUser.uid === meta.createdBy;
-  const hasInviteCode = !!meta.inviteCode;
-  const isClosed = meta.status === 'closed';
-  closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
-
-
-  //Ajout du partage WhatsApp / Email
-  if (isAdmin && hasInviteCode) {
-    const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
-
-    document.getElementById("shareWhatsappBtn")?.addEventListener("click", () => {
-      const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
-      window.open(url, "_blank");
-    });
-
-    document.getElementById("shareMailBtn")?.addEventListener("click", () => {
-      const subject = `Invitation à la campagne ${meta.name}`;
-      const body = inviteText;
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    });
-  }
-*/
 
   //User can Access Discussion
 const canAccessDiscussion = await userCanAccessDiscussion(session);
@@ -1376,19 +1346,6 @@ document.addEventListener("click", e => {
 });
 
 
-/*
-function getZikrStatus(objectif, current) {
-  if (!current || current === 0) {
-    return { key: 'free', label: 'disponible' };
-  }
-
-  if (current < objectif) {
-    return { key: 'assigned', label: 'en cours' };
-  }
-
-  return { key: 'finished', label: 'terminé' };
-}
-*/
 
 function getZikrStatus(objectif, current, finished) {
   if (!current || current === 0) {
@@ -1758,9 +1715,6 @@ document.getElementById('validateZikrChoices').addEventListener('click', async (
       );
       updateLocalContributorUI(card, value);
     }
-
-    // 🔄 refresh UI
-    //await loadZikrFormulas(currentSessionId);
   });
 
 //FIN
@@ -1957,89 +1911,7 @@ function openInviteCodeModal() {
 document.getElementById("joinWithCodeBtn")
   .addEventListener("click", openInviteCodeModal);
 
-/* ---------- Initialization ---------- */
-(async function init() {
-  // by design: DO NOT auto-create default session or populate DB
-  // only show sessions after login
-  try {
-    const result = await getRedirectResult(auth);
-    if (result?.user) {
-      console.log("Connexion Google via redirect OK", result.user);
-    }
-  } catch (e) {
-    console.error("Erreur Google redirect", e);
-  }
 
-  
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      showPage('home');
-      el.sessionsDiv.innerHTML = '';
-      return;
-    }
-
-    // email/password non vérifié
-    if (
-      user.providerData.some(p => p.providerId === 'password') &&
-      !user.emailVerified
-    ) {
-      alert('Veuillez vérifier votre email.');
-      await signOut(auth);
-      return;
-    }
-
-    showPage('dashboard');
-    document.getElementById('homeConnectBtn').style.display = 'none';
-
-    document.getElementById('bottomActionBtn').style.display = 'flex';
-    document.getElementById('menuLogout').style.display = 'inline-block';
-
-
-    const userRef = doc(db, 'users', user.uid);
-    const snap = await getDoc(userRef);
-
-    let pseudo = user.displayName;
-
-    // 🟢 Google → pseudo auto
-    if (!pseudo) {
-      pseudo = generatePseudo();
-      await updateProfile(user, { displayName: pseudo });
-    }
-
-    const userData = {
-      uid: user.uid,
-      pseudo,
-      email: user.email,
-      photoURL: user.photoURL || 'default.jpg',
-      lastLogin: serverTimestamp()
-    };
-
-    if (!snap.exists()) {
-      userData.createdAt = serverTimestamp();
-      await setDoc(userRef, userData);
-    } else {
-      await setDoc(userRef, userData, { merge: true });
-    }
-
-    document.querySelector('#menuUserAvatar img').src = user.photoURL || 'default.jpg';
-
-
-    await loadSessions();
-  });
-
-
-  // wire UI
-  document.getElementById('homeConnectBtn').addEventListener('click', () => showPage('authPage'));
-  el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
-  el.menuLogoutBtn?.addEventListener('click', async () => {
-    await signOut(auth);
-    showPage('home');
-    document.getElementById('homeConnectBtn').style.display = 'inline-block';
-    document.getElementById('bottomActionBtn').style.display = 'none';
-    document.getElementById('menuLogout').style.display = 'none';
-  });
-
-})();
 
 
 document.addEventListener("click", async (e) => {
@@ -2278,140 +2150,6 @@ async function userHasJuzInSession(sessionId, userId) {
   return !snap.empty;
 }
 
-/*
-function loadMessages(sessionId) {
-  const list = document.getElementById("messagesList");
-  list.innerHTML = "";
-
-  const q = query(
-    collection(db, SESSIONS_COLLECTION, sessionId, "messages"),
-    orderBy("createdAt", "asc")
-  );
-
-  onSnapshot(q, snap => {
-    list.innerHTML = "";
-
-    snap.forEach(doc => {
-      const m = doc.data();
-
-      const div = document.createElement("div");
-      div.className = "message";
-      div.innerHTML = `
-        <div class="message-header">
-          <img src="${m.photoURL || 'default.jpg'}" />
-          <strong>${m.authorPseudo}</strong>
-          <small>${m.createdAt?.toDate().toLocaleTimeString()}</small>
-        </div>
-        <div class="message-text">${m.text}</div>
-      `;
-
-      list.appendChild(div);
-    });
-
-    list.scrollTop = list.scrollHeight;
-  });
-}
-*/
-
-/*
-function loadMessages(sessionId) {
-  const list = document.getElementById("messagesList");
-  list.innerHTML = "";
-
-  const q = query(
-    collection(db, SESSIONS_COLLECTION, sessionId, "messages"),
-    orderBy("createdAt", "asc")
-  );
-
-  onSnapshot(q, snap => {
-    list.innerHTML = "";
-
-    snap.forEach(doc => {
-      const m = doc.data();
-      const isCurrentUser = auth.currentUser && m.authorId === auth.currentUser.uid;
-
-      const div = document.createElement("div");
-      div.className = `message ${isCurrentUser ? "me" : "other"}`;
-      div.innerHTML = `
-        <div class="message-header">
-          ${!isCurrentUser ? `<img src="${m.photoURL || 'default.jpg'}" />` : ""}
-          <strong>${m.authorPseudo}</strong>
-          <small>${m.createdAt?.toDate().toLocaleString()}</small>
-        </div>
-        <div class="message-text">${m.text}</div>
-      `;
-
-      list.appendChild(div);
-    });
-
-    list.scrollTop = list.scrollHeight;
-  });
-}
-*/
-/*
-function formatMessageDate(ts) {
-  if (!ts) return "";
-  const d = ts.toDate();
-  const now = new Date();
-
-  const diffTime = now - d;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  const options = { day: 'numeric', month: 'short' };
-  const weekday = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 7) return weekday[d.getDay()];
-  return `${weekday[d.getDay()]} ${d.toLocaleDateString('fr-FR', options)}`;
-}
-
-function loadMessages(sessionId) {
-  const list = document.getElementById("messagesList");
-  list.innerHTML = "";
-
-  const q = query(
-    collection(db, SESSIONS_COLLECTION, sessionId, "messages"),
-    orderBy("createdAt", "asc")
-  );
-
-  let lastDate = "";
-
-  onSnapshot(q, snap => {
-    list.innerHTML = "";
-    lastDate = "";
-
-    snap.forEach(doc => {
-      const m = doc.data();
-      const isCurrentUser = auth.currentUser && m.authorId === auth.currentUser.uid;
-
-      // Formater la date pour le badge
-      const dateStr = formatMessageDate(m.createdAt);
-      let dateBadge = "";
-      if (dateStr !== lastDate) {
-        dateBadge = `<div class="date-badge">${dateStr}</div>`;
-        lastDate = dateStr;
-      }
-
-      const div = document.createElement("div");
-      div.className = `message ${isCurrentUser ? "me" : "other"}`;
-      div.innerHTML = `
-        ${dateBadge}
-        <div class="message-header">
-          ${!isCurrentUser ? `<img src="${m.photoURL || 'default.jpg'}" />` : ""}
-          <strong>${m.authorPseudo}</strong>
-          <small>${m.createdAt?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
-        </div>
-        <div class="message-text">${m.text}</div>
-      `;
-
-      list.appendChild(div);
-    });
-
-    list.scrollTop = list.scrollHeight;
-  });
-}
-*/
 
 function formatMessageDate(ts) {
   if (!ts) return "";
