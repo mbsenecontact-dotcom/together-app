@@ -24,10 +24,24 @@
     </div>
 
     <!-- Barre de navigation en haut à droite de l'écran class="header-right" : style.css -->
-    <nav class="header-right">
+    <!--<nav class="header-right">
       <button id="menuLogout" class="btn btn-danger" style="display:none">Déconnexion</button>
       <div id="menuUserAvatar" class="avatar-sm"><img src="default.jpg" alt="Avatar utilisateur" class="avatar" /></div>
+    </nav>-->
+
+    <nav class="header-right">
+      <select id="languageSelect" class="lang-select">
+        <option value="fr" data-flag="🇫🇷">🇫🇷 Français</option>
+        <option value="wo" data-flag="🇸🇳">🇸🇳 Wolof</option>
+        <option value="en" data-flag="🇬🇧">🇬🇧 Anglais</option>
+        <option value="ar" data-flag="🇦🇪">🇦🇪 Arabe</option>
+      </select>
+    
+      <div id="menuUserAvatar" class="avatar-sm">
+        <img src="default.jpg" alt="Avatar utilisateur" class="avatar" />
+      </div>
     </nav>
+    
   </header>
 
   <main id="main">
@@ -167,7 +181,7 @@
 
         </div>
 
-        <div id="grid" class="grid"></div>
+        <div id="grid" class="card"></div>
 
         <!-- ====== ZIKR VIEW ====== -->
         <div id="zikrView" class="card hidden">

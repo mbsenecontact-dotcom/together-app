@@ -542,7 +542,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1200; /* au-dessus du formulaire */
+  z-index: var(z-scroll-btn);/* au-dessus du formulaire */
   transition: transform 0.2s, background 0.2s;
 }
 
@@ -765,26 +765,167 @@ main {
     padding: 12px;
   }
 }
+/* Base du modal */
 .modal {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.35);
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* modale en bas */
   justify-content: center;
   z-index: var(--z-modal);
-
-  /* bloque tout derrière */
   pointer-events: auto;
+  overflow: hidden;
 }
 
+/* Card du modal */
 .modal-card {
   background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  max-width: 420px;
+  border-radius: 16px 16px 0 0;
+  padding: 24px 20px 32px;
+  max-width: 400px;
   width: calc(100% - 24px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.25);
+
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.modal.open .modal-card {
+  transform: translateY(0);
+}
+
+/* Titre */
+.modal-card h3 {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+/* Avatar */
+.profile-avatar {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.profile-avatar img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* Bouton appareil photo */
+.profile-avatar input[type="file"] {
+  display: none;
+}
+
+.profile-avatar .change-avatar-btn {
+  position: absolute;
+  bottom: 0;
+  right: calc(50% - 60px); /* côté droit du cercle */
+  background: #2980b9;
+  border-radius: 50%;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  color: #fff;
+  font-size: 1rem;
+}
+
+/* Inputs */
+.modal-card input[type="text"],
+.modal-card input[type="file"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-card input:focus {
+  border-color: var(--accent);
+}
+
+/* Boutons */
+.modal-card .btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.modal-card .btn-success {
+  background: var(--accent);
+  color: #fff;
+}
+
+.modal-card .btn-success:hover {
+  background: #1f5d91;
+}
+
+.modal-card .btn {
+  background: #eee;
+  color: #333;
+}
+
+.modal-card .btn:hover {
+  background: #ddd;
+}
+
+/* Modal feedback temporaire */
+.modal-feedback {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--accent);
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 2000;
+}
+
+/* Active */
+.modal-feedback.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+
+/* Erreur */
+#profileError {
+  text-align: center;
+  min-height: 20px;
+  color: #c0392b;
+  margin-bottom: 12px;
+}
+
+
+/* Quand la modale est ouverte */
+.modal.open .modal-card {
+  transform: translateY(0);
 }
 
 
@@ -1261,6 +1402,29 @@ main {
   font-size: 0.9em;
 }
 
+.toggle-contribs {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 20px;
+  background: #eef2f7;
+  color: #333;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-contribs .juz-badge {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
 
 
 .toggle-contribs {
@@ -1286,15 +1450,18 @@ main {
   transform: scale(0.97);
 }
 
-.toggle-contribs.open {
+
+.toggle-contribs .icon {
+  font-size: 1rem;
+}
+
+.toggle-contribs.open .chevron {
+  transform: rotate(180deg);
   background: #0d6efd;
   color: #fff;
   border-color: #0d6efd;
 }
 
-.toggle-contribs .icon {
-  font-size: 1rem;
-}
 
 .zikr-contributor {
   display: grid;
@@ -1384,8 +1551,27 @@ main {
 }
 
 
+.zikr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
+.zikr-info .row {
+  display: flex;
+  gap: 8px;
+}
 
+.zikr-info .label {
+  min-width: 70px;
+  font-weight: 600;
+  color: #666;
+}
+
+.zikr-info .value {
+  flex: 1;
+  word-break: break-word;
+}
 
 
 
@@ -1547,4 +1733,60 @@ main, #discussionSection {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+
+.lang-select {
+  cursor: pointer;
+}
+
+.lang-select:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+
+/* 🎨 Inputs & Selects uniformisés */
+input,
+select,
+textarea {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* Focus cohérent */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+/* Inputs date & number (meilleur rendu mobile) */
+input[type="date"],
+input[type="number"] {
+  padding: 5px 8px;
+}
+
+/* Input file (éviter l’horreur native) */
+input[type="file"] {
+  border: none;
+  padding: 0;
+}
+
+/* Placeholder plus doux */
+input::placeholder,
+textarea::placeholder {
+  color: #aaa;
+}
+
+.modal-card input,
+.modal-card select,
+.modal-card textarea {
+  width: 100%;
+  margin-top: 4px;
 }

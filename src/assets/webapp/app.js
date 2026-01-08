@@ -2,12 +2,12 @@
 import { auth, provider, db, SESSIONS_COLLECTION } from "./firebase.js";
 import {
   doc, setDoc, updateDoc, onSnapshot, getDoc, serverTimestamp,
-  collection, getDocs, addDoc, query, where, orderBy, getFirestore, arrayUnion, increment 
+  collection, getDocs, addDoc, query, where, orderBy, getFirestore, arrayUnion, increment
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 
 import {
-  signOut, 
+  signOut,
   onAuthStateChanged,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, sendEmailVerification, updateProfile
@@ -43,7 +43,6 @@ const el = {
   stats: document.getElementById('stats'),
   newSessionBtn: document.getElementById('newSessionBtn'),
   homeConnectBtn: document.getElementById('homeConnectBtn'),
-  menuLogoutBtn: document.getElementById('menuLogout'),
   closeSessionBtn: document.getElementById('closeSessionBtn'),
   sessionModal: document.getElementById('sessionModal'),
   bottomActionBtn: document.getElementById('bottomActionBtn'),
@@ -90,12 +89,11 @@ el.googleLogin.addEventListener('click', async () => {
 
 
 
-  
+
 (async function init() {
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
   onAuthStateChanged(auth, async (user) => {
-    console.log('User =='+user)
     if (!user) {
       showPage('home');
       el.sessionsDiv.innerHTML = '';
@@ -107,7 +105,7 @@ el.googleLogin.addEventListener('click', async () => {
       user.providerData.some(p => p.providerId === 'password') &&
       !user.emailVerified
     ) {
-      alert('Veuillez vérifier votre email.');
+      showModalFeedback('Veuillez vérifier votre email.');
       await signOut(auth);
       return;
     }
@@ -116,7 +114,6 @@ el.googleLogin.addEventListener('click', async () => {
     document.getElementById('homeConnectBtn').style.display = 'none';
 
     document.getElementById('bottomActionBtn').style.display = 'flex';
-    document.getElementById('menuLogout').style.display = 'inline-block';
 
 
     const userRef = doc(db, 'users', user.uid);
@@ -155,13 +152,6 @@ el.googleLogin.addEventListener('click', async () => {
   // wire UI
   document.getElementById('homeConnectBtn').addEventListener('click', () => showPage('authPage'));
   el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
-  el.menuLogoutBtn?.addEventListener('click', async () => {
-    await signOut(auth);
-    showPage('home');
-    document.getElementById('homeConnectBtn').style.display = 'inline-block';
-    document.getElementById('bottomActionBtn').style.display = 'none';
-    document.getElementById('menuLogout').style.display = 'none';
-  });
 
 })();
 
@@ -172,17 +162,17 @@ tabCoran.onclick = () => {
   tabCoran.classList.add("active");
   tabZikr.classList.remove("active");
 
-// Cacher
-sessionView.hidden = true;
-    // Affiche uniquement la grille Juz
-    //juzGrid.classList.remove("hidden");
-   // zikrGrid.classList.add("hidden");
-  
-    // Affiche la barre de sélection Juz
-    //juzSelectionBar.classList.remove("hidden");
+  // Cacher
+  sessionView.hidden = true;
+  // Affiche uniquement la grille Juz
+  //juzGrid.classList.remove("hidden");
+  // zikrGrid.classList.add("hidden");
+
+  // Affiche la barre de sélection Juz
+  //juzSelectionBar.classList.remove("hidden");
 
 
-   // réinitialise les onglets internes
+  // réinitialise les onglets internes
 
   applyFilter();
 };
@@ -200,8 +190,8 @@ tabZikr.onclick = () => {
 
   // Cache la barre de sélection Juz
   //juzSelectionBar.classList.add("hidden");
-   // réinitialise les onglets internes
-   sessionView.hidden = true;
+  // réinitialise les onglets internes
+  sessionView.hidden = true;
 
   applyFilter();
 };
@@ -562,6 +552,11 @@ const stats = document.getElementById('stats');
 const closeBtn = document.getElementById('closeSessionBtn');
 
 async function openSession(session) {
+
+  if (!session || !session.id) {
+    throw new Error("openSession attend une session complète");
+  }
+  
   // cleanup listeners
   unsubscribers.forEach(u => u && u());
   unsubscribers = [];
@@ -570,7 +565,7 @@ async function openSession(session) {
   currentSessionId = session.id;
 
   // Affiche l'entête
- // sessionHeader.classList.remove('hidden');
+  // sessionHeader.classList.remove('hidden');
 
   // Personnalisation selon type de campagne
   if (session.typeCampagne === 'zikr') {
@@ -587,22 +582,23 @@ async function openSession(session) {
     closeBtn.textContent = 'Clôturer la campagne';
 
     // Affiche uniquement la grille Juz
-   document.getElementById('sessionView').classList.remove('hidden');
-   
+    document.getElementById('sessionView').classList.remove('hidden');
+
     showCoranCampaign(session);
   }
-// Charger les métadonnées
-const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
-if (!metaSnap.exists()) return alert('Session introuvable');
-const meta = metaSnap.data();
+  // Charger les métadonnées
+  const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
+  if (!metaSnap.exists()) return showModalFeedback('Session introuvable');
+  const meta = metaSnap.data();
 
 
-const isAdmin = auth.currentUser.uid === meta.createdBy;
-const hasInviteCode = !!meta.inviteCode;
-const isClosed = meta.status === 'closed';
+  const isAdmin = auth.currentUser.uid === meta.createdBy;
+  const hasInviteCode = !!meta.inviteCode;
+  const isClosed = meta.status === 'closed';
 
 
-el.sessionMeta.innerHTML = `
+  el.sessionMeta.innerHTML = `
+  <div><strong>Description :</strong> ${meta.name}</div>
   <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
   <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
   <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
@@ -625,41 +621,41 @@ el.sessionMeta.innerHTML = `
 `;
 
 
-if (isAdmin && hasInviteCode) {
-  const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
+  if (isAdmin && hasInviteCode) {
+    const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
 
-  document.getElementById("shareBtn")?.addEventListener("click", async () => {
-    if (navigator.share) {
-      // 📱 Mobile : partage natif
-      try {
-        await navigator.share({
-          title: `Invitation – ${meta.name}`,
-          text: inviteText
-        });
-      } catch (err) {
-        console.log("Partage annulé", err);
+    document.getElementById("shareBtn")?.addEventListener("click", async () => {
+      if (navigator.share) {
+        // 📱 Mobile : partage natif
+        try {
+          await navigator.share({
+            title: `Invitation – ${meta.name}`,
+            text: inviteText
+          });
+        } catch (err) {
+          console.log("Partage annulé", err);
+        }
+      } else {
+        // 💻 Fallback desktop (copie ou WhatsApp)
+        const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
+        window.open(url, "_blank");
       }
-    } else {
-      // 💻 Fallback desktop (copie ou WhatsApp)
-      const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
-      window.open(url, "_blank");
-    }
-  });
-}
+    });
+  }
 
-// Afficher ou cacher bouton Clôturer selon statut
-closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
+  // Afficher ou cacher bouton Clôturer selon statut
+  closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
 
 
   //User can Access Discussion
-const canAccessDiscussion = await userCanAccessDiscussion(session);
+  const canAccessDiscussion = await userCanAccessDiscussion(session);
 
-if (canAccessDiscussion) {
-  enableDiscussion();
-  loadMessages(currentSessionId);
-} else {
-  disableDiscussion();
-}
+  if (canAccessDiscussion) {
+    enableDiscussion();
+    loadMessages(currentSessionId);
+  } else {
+    disableDiscussion();
+  }
 
 
 
@@ -715,12 +711,34 @@ if (canAccessDiscussion) {
     if (inviteBox) {
       inviteBox.classList.add('is-closed');
     }
-    
+
     return;
   }
 
 
-/*
+  /*
+    document.getElementById("sendMessageBtn").onclick = async () => {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (!text) return;
+  
+      const user = auth.currentUser;
+      if (!user || !currentSessionId) return;
+  
+      await addDoc(
+        collection(db, SESSIONS_COLLECTION, currentSessionId, "messages"),
+        {
+          text,
+          authorId: user.uid,
+          authorPseudo: user.displayName || "Utilisateur",
+          photoURL: user.photoURL || "default.jpg",
+          createdAt: serverTimestamp()
+        }
+      );
+  
+      input.value = "";
+    };
+  */
   document.getElementById("sendMessageBtn").onclick = async () => {
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
@@ -742,28 +760,6 @@ if (canAccessDiscussion) {
 
     input.value = "";
   };
-*/
-document.getElementById("sendMessageBtn").onclick = async () => {
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
-  if (!text) return;
-
-  const user = auth.currentUser;
-  if (!user || !currentSessionId) return;
-
-  await addDoc(
-    collection(db, SESSIONS_COLLECTION, currentSessionId, "messages"),
-    {
-      text,
-      authorId: user.uid,
-      authorPseudo: user.displayName || "Utilisateur",
-      photoURL: user.photoURL || "default.jpg",
-      createdAt: serverTimestamp()
-    }
-  );
-
-  input.value = "";
-};
   // --- Campagne ouverte ---
   if (isAdmin && allFinished) {
     closeBtn.style.display = 'inline-block';
@@ -773,14 +769,14 @@ document.getElementById("sendMessageBtn").onclick = async () => {
       if (!confirm('Clore définitivement cette campagne ?')) return;
 
       await updateDoc(
-        doc(db, SESSIONS_COLLECTION, sessionId),
+        doc(db, SESSIONS_COLLECTION, currentSessionId),
         {
           status: 'closed',
           closedAt: serverTimestamp()
         }
       );
 
-      alert('Campagne clôturée');
+      showModalFeedback('Campagne clôturée');
 
       // Griser immédiatement l’UI
       closeBtn.classList.add('is-closed');
@@ -813,14 +809,165 @@ async function userCanAccessDiscussion(session) {
 
 
 /* ---------- Grid rendering & click handling ---------- */
+const juzDetails = {
+  1: {
+    description: "Introduction du Coran, fondements de la foi et appel à l’adoration sincère.",
+    debut: "S. n°1 / V. n°1",
+    fin: "S. n°2 / V. n°141"
+  },
+  2: {
+    description: "Lois religieuses et identité de la communauté musulmane.",
+    debut: "S. n°2 / V. n°142",
+    fin: "S. n°2 / V. n°252"
+  },
+  3: {
+    description: "Relations intercommunautaires et histoire des prophètes.",
+    debut: "S. n°2 / V. n°253",
+    fin: "S. n°3 / V. n°92"
+  },
+  4: {
+    description: "Justice sociale, droits des femmes et organisation familiale.",
+    debut: "S. n°3 / V. n°93",
+    fin: "S. n°4 / V. n°23"
+  },
+  5: {
+    description: "Lois familiales, héritage et protection des plus vulnérables.",
+    debut: "S. n°4 / V. n°24",
+    fin: "S. n°4 / V. n°147"
+  },
+  6: {
+    description: "Responsabilité morale, obéissance divine et alliances.",
+    debut: "S. n°4 / V. n°148",
+    fin: "S. n°5 / V. n°81"
+  },
+  7: {
+    description: "Fidélité aux engagements et récits des communautés passées.",
+    debut: "S. n°5 / V. n°82",
+    fin: "S. n°6 / V. n°110"
+  },
+  8: {
+    description: "Unicité de Dieu et rejet de l’idolâtrie.",
+    debut: "S. n°6 / V. n°111",
+    fin: "S. n°7 / V. n°87"
+  },
+  9: {
+    description: "Récits des peuples anciens et avertissements divins.",
+    debut: "S. n°7 / V. n°88",
+    fin: "S. n°8 / V. n°40"
+  },
+  10: {
+    description: "Confiance en Dieu et constance face aux épreuves.",
+    debut: "S. n°8 / V. n°41",
+    fin: "S. n°9 / V. n°92"
+  },
+  11: {
+    description: "Sincérité, repentir et justice divine.",
+    debut: "S. n°9 / V. n°93",
+    fin: "S. n°11 / V. n°5"
+  },
+  12: {
+    description: "Histoires prophétiques et leçon de patience.",
+    debut: "S. n°11 / V. n°6",
+    fin: "S. n°12 / V. n°52"
+  },
+  13: {
+    description: "Foi, persévérance et victoire de la vérité.",
+    debut: "S. n°12 / V. n°53",
+    fin: "S. n°14 / V. n°52"
+  },
+  14: {
+    description: "Mission prophétique, sagesse et gratitude.",
+    debut: "S. n°15 / V. n°1",
+    fin: "S. n°16 / V. n°128"
+  },
+  15: {
+    description: "Morale, récits édifiants et rappel de l’au-delà.",
+    debut: "S. n°17 / V. n°1",
+    fin: "S. n°18 / V. n°74"
+  },
+  16: {
+    description: "Science divine, épreuves humaines et guidance.",
+    debut: "S. n°18 / V. n°75",
+    fin: "S. n°20 / V. n°135"
+  },
+  17: {
+    description: "Prophètes, justice divine et résurrection.",
+    debut: "S. n°21 / V. n°1",
+    fin: "S. n°22 / V. n°78"
+  },
+  18: {
+    description: "Foi sincère, comportement éthique et communauté.",
+    debut: "S. n°23 / V. n°1",
+    fin: "S. n°25 / V. n°20"
+  },
+  19: {
+    description: "Miséricorde divine et distinction entre vérité et mensonge.",
+    debut: "S. n°25 / V. n°21",
+    fin: "S. n°27 / V. n°55"
+  },
+  20: {
+    description: "Savoir, humilité et signes de la création.",
+    debut: "S. n°27 / V. n°56",
+    fin: "S. n°29 / V. n°45"
+  },
+  21: {
+    description: "Responsabilité morale et préparation à l’au-delà.",
+    debut: "S. n°29 / V. n°46",
+    fin: "S. n°33 / V. n°30"
+  },
+  22: {
+    description: "Éthique sociale et législation islamique.",
+    debut: "S. n°33 / V. n°31",
+    fin: "S. n°36 / V. n°27"
+  },
+  23: {
+    description: "Message prophétique et miséricorde universelle.",
+    debut: "S. n°36 / V. n°28",
+    fin: "S. n°39 / V. n°31"
+  },
+  24: {
+    description: "Lumière divine, purification morale et foi.",
+    debut: "S. n°39 / V. n°32",
+    fin: "S. n°41 / V. n°46"
+  },
+  25: {
+    description: "Unicité de Dieu et finalité de l’existence humaine.",
+    debut: "S. n°41 / V. n°47",
+    fin: "S. n°45 / V. n°37"
+  },
+  26: {
+    description: "Patience, appel à Dieu et victoire spirituelle.",
+    debut: "S. n°46 / V. n°1",
+    fin: "S. n°51 / V. n°30"
+  },
+  27: {
+    description: "Jugement dernier et rappel puissant.",
+    debut: "S. n°51 / V. n°31",
+    fin: "S. n°57 / V. n°29"
+  },
+  28: {
+    description: "Discipline spirituelle et règles communautaires.",
+    debut: "S. n°58 / V. n°1",
+    fin: "S. n°66 / V. n°12"
+  },
+  29: {
+    description: "Courtes sourates centrées sur la foi et l’au-delà.",
+    debut: "S. n°67 / V. n°1",
+    fin: "S. n°77 / V. n°50"
+  },
+  30: {
+    description: "Rappels finaux, monothéisme et destinée humaine.",
+    debut: "S. n°78 / V. n°1",
+    fin: "S. n°114 / V. n°6"
+  }
+};
 
 
 function renderGrid(juzData) {
   el.grid.innerHTML = '';
   let finished = 0;
 
-  juzData.forEach(j => 
-    {
+  juzData.forEach(j => {
     if (!j) return;
     if (j.status === 'finished') finished++;
 
@@ -840,50 +987,140 @@ function renderGrid(juzData) {
     }
 
     if (j.status === 'assigned') {
-      statusLabel = `en cours / ${pseudo}`;
+      //statusLabel = `en cours / ${pseudo}`;
+      statusLabel = `en cours`;
       statusClass = 'badge-assigned';
     }
 
     if (j.status === 'finished') {
-      statusLabel = `terminé / ${pseudo}`;
+      //statusLabel = `terminé / ${pseudo}`;
+      statusLabel = `terminé`;
       statusClass = 'badge-finished';
     }
+    /*
+            card.innerHTML = `
+          <div class="juz-header">
+            <label class="juz-checkbox">
+              <input
+                type="checkbox"
+                class="juz-check"
+                data-juz="${j.number}"
+                ${j.status === 'finished' ? 'checked disabled' : ''}
+              />
+              <span class="juz-number">Juz ${j.number}</span>
+            </label>
+          </div>
+    
+          <div class="zikr-body">
+    
+              <button class="toggle-contribs" type="button" aria-expanded="false">
+                <i class="fas fa-users"></i>
+                <span class="juz-badge ${statusClass}">${statusLabel}</span>
+                <i class="fas fa-chevron-down chevron"></i>
+              </button>
+    
+              <div class="zikr-contribs hidden">
+                <span>${pseudo != '' ? pseudo : "Aucun contributeur"}</span>
+              
+                <hr>
+    
+                <!-- Tableau sans bordure -->
+                <table class="zikr-table zikr-totals-table">
+                  <tr>
+                    <td class="label">Juz n° :</td>
+                    <td class="value"><strong>X</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="label">Description :</td>
+                    <td class="value"><strong>Introduction du Coran, fondements de la foi et appel à l’adoration sincère.</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="label">Début : </td>
+                    <td class="value"><strong>S. n°1 / V. n°1</strong></td>
+                  </tr>
+              <tr>
+                    <td class="label">Fin : </td>
+                    <td class="value"><strong>S. n°2 / V. n°141</strong></td>
+                  </tr>
+                  <!-- Input pleine largeur -->
+                  <tr>
+                    <td colspan="2">
+                      <div >
+                        <button class="btn-sucess">Valider</button>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+          </div>
+        `;*/
 
-        card.innerHTML = `
-      <div class="juz-header">
-        <label class="juz-checkbox">
-          <input
-            type="checkbox"
-            class="juz-check"
-            data-juz="${j.number}"
-            ${j.status === 'finished' ? 'checked disabled' : ''}
-          />
-          <span class="juz-number">Juz ${j.number}</span>
-        </label>
+    card.innerHTML = `
+    <div class="juz-header">
+      <label class="juz-checkbox">
+        <input
+          type="checkbox"
+          class="juz-check"
+          data-juz="${j.number}"
+          ${j.status === 'finished' ? 'checked disabled' : ''}
+        />
+        <span class="juz-number">Juz ${j.number}</span>
+      </label>
+    </div>
+  
+    <div class="zikr-body">
+  
+      <button class="toggle-contribs" type="button" aria-expanded="false">
+        <i class="fas fa-users"></i>
+        <span class="juz-badge ${statusClass}">${statusLabel}</span>
+        <i class="fas fa-chevron-down chevron"></i>
+      </button>
+  
+      <div class="zikr-contribs hidden">
+        <span>${pseudo !== '' ? pseudo : "Aucun contributeur"}</span>
+  
+        <hr>
+  
+<div class="zikr-info">
+  <div class="row">
+    <span class="label">Juz n°</span>
+    <span class="value">${j.number}</span>
+  </div>
+  <div class="row">
+    <span class="label">Desc.</span>
+    <span class="value">${juzDetails[j.number].description}</span>
+  </div>
+  <div class="row">
+    <span class="label">Début</span>
+    <span class="value">${juzDetails[j.number].debut}</span>
+  </div>
+  <div class="row">
+    <span class="label">Fin</span>
+    <span class="value">${juzDetails[j.number].fin}</span>
+  </div>
 
-        <span class="juz-badge ${statusClass}">
-          ${statusLabel}
-        </span>
+  <button class="btn-success">Valider</button>
+</div>
+
       </div>
-    `;
-
+    </div>
+  `;
 
     // 🖱️ clic sur la carte → toggle checkbox (sauf disabled)
-    card.addEventListener('click', e => 
-    {
+    card.addEventListener('click', e => {
       if (e.target.tagName === 'INPUT') return;
 
       const checkbox = card.querySelector('.juz-check');
       if (checkbox.disabled) return;
-      
+
       checkbox.checked = !checkbox.checked;
       // 🔥 FORCE la mise à jour globale
-        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
 
 
-        el.grid.appendChild(card);
+    el.grid.appendChild(card);
   });
 
   el.stats.textContent = `Terminés : ${finished} / 30`;
@@ -966,10 +1203,10 @@ document.getElementById('validateJuzBtn').onclick = async () => {
       refusedOther.push(num);
     }
   }
-const message = 'Juz Chosis :'
+  const message = 'Juz Chosis :'
   showJuzFeedback({
     success,
-    refusedOther, 
+    refusedOther,
     message
   });
 };
@@ -1007,11 +1244,11 @@ document.getElementById('finishJuzBtn').onclick = async () => {
       refusedOther.push(num);
     }
   }
-    const message = 'Juz terminés :'
-  showJuzFeedback({ success, refusedFree, refusedOther , message});
+  const message = 'Juz terminés :'
+  showJuzFeedback({ success, refusedFree, refusedOther, message });
 };
 
-function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [] , message}) {
+function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [], message }) {
   const box = document.getElementById('juzFeedback');
   box.className = 'juz-feedback';
 
@@ -1038,6 +1275,7 @@ function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [] , m
 }
 
 /* ---------- UI: create session modal ---------- */
+/*
 function openCreateSessionModal() {
 
   const modal = openModal(`
@@ -1106,7 +1344,7 @@ function openCreateSessionModal() {
 
   document.body.appendChild(modal);
 
-  
+
   // ---- Logique d'affichage des options selon "Publique" ----
   // Masquer/afficher la génération de code selon "Publique"
 
@@ -1120,33 +1358,33 @@ function openCreateSessionModal() {
   const labelPrivate = document.getElementById("labelPrivate");
   const labelPublic = document.getElementById("labelPublic");
 
-const typeSelect = document.getElementById('ns_type');
-const zikrBlock = document.getElementById('zikrFormulasCreate');
-const addFormulaBtn = document.getElementById('addFormulaBtn');
+  const typeSelect = document.getElementById('ns_type');
+  const zikrBlock = document.getElementById('zikrFormulasCreate');
+  const addFormulaBtn = document.getElementById('addFormulaBtn');
 
-typeSelect.addEventListener('change', () => {
+  typeSelect.addEventListener('change', () => {
+    zikrBlock.style.display =
+      typeSelect.value === 'zikr' ? 'block' : 'none';
+  });
+
+  // affichage initial (IMPORTANT)
   zikrBlock.style.display =
     typeSelect.value === 'zikr' ? 'block' : 'none';
-});
 
-// affichage initial (IMPORTANT)
-zikrBlock.style.display =
-  typeSelect.value === 'zikr' ? 'block' : 'none';
+  addFormulaBtn.addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'zikr-formula';
+    row.style.display = 'flex';
+    row.style.gap = '6px';
+    row.style.marginTop = '6px';
 
-addFormulaBtn.addEventListener('click', () => {
-  const row = document.createElement('div');
-  row.className = 'zikr-formula';
-  row.style.display = 'flex';
-  row.style.gap = '6px';
-  row.style.marginTop = '6px';
-
-  row.innerHTML = `
+    row.innerHTML = `
     <input placeholder="Nom formule" class="zf-name" />
     <input type="number" placeholder="Objectif" class="zf-target" />
   `;
 
-  zikrBlock.insertBefore(row, addFormulaBtn);
-});
+    zikrBlock.insertBefore(row, addFormulaBtn);
+  });
 
 
 
@@ -1224,68 +1462,206 @@ addFormulaBtn.addEventListener('click', () => {
 
   // ---- Création de la campagne ----
 
-modal.querySelector('#ns_create').onclick = async () => {
-  const name = document.getElementById('ns_name').value.trim();
-  const typeCampagne = document.getElementById('ns_type').value;
-  const start = startDate.value || null;
-  const end = endDate.value || null;
-  const isPublic = publicCheckbox.checked;
-  const invited = parseCSVemails(document.getElementById('ns_invited').value);
-  const genCode = genCodeCheckbox.checked;
+  modal.querySelector('#ns_create').onclick = async () => {
+    const name = document.getElementById('ns_name').value.trim();
+    const typeCampagne = document.getElementById('ns_type').value;
+    const start = startDate.value || null;
+    const end = endDate.value || null;
+    const isPublic = publicCheckbox.checked;
+    const invited = parseCSVemails(document.getElementById('ns_invited').value);
+    const genCode = genCodeCheckbox.checked;
 
-  if (!name) return alert('Donnez un nom à la campagne');
+    if (!name) return showModalFeedback('Donnez un nom à la campagne');
 
-  let formules = [];
+    let formules = [];
 
-  if (typeCampagne === 'zikr') {
-    document.querySelectorAll('.zikr-formula').forEach(row => {
-      const fname = row.querySelector('.zf-name').value.trim();
-      const target = Number(row.querySelector('.zf-target').value);
+    if (typeCampagne === 'zikr') {
+      document.querySelectorAll('.zikr-formula').forEach(row => {
+        const fname = row.querySelector('.zf-name').value.trim();
+        const target = Number(row.querySelector('.zf-target').value);
 
-      if (fname && Number.isFinite(target) && target > 0) {
-        formules.push({
-          name: fname,
-          objectif: target
-        });
+        if (fname && Number.isFinite(target) && target > 0) {
+          formules.push({
+            name: fname,
+            objectif: target
+          });
+        }
+      });
+
+      if (!formules.length) {
+        return showModalFeedback('Ajoutez au moins une formule de Zikr avec un objectif valide');
       }
-    });
-
-    if (!formules.length) {
-      return alert('Ajoutez au moins une formule de Zikr avec un objectif valide');
     }
-  }
 
-  /*
-  const inviteCode = genCode
-    ? Math.random().toString(36).slice(2, 8).toUpperCase()
-    : null;*/
-
+    /*
+    const inviteCode = genCode
+      ? Math.random().toString(36).slice(2, 8).toUpperCase()
+      : null;*/
+/*
     const inviteCode = !isPublic
-  ? Math.random().toString(36).slice(2, 8).toUpperCase()
-  : null;
-  try {
-    const sessionId = await createSession({
-      name,
-      typeCampagne,
-      startDate: start,
-      endDate: end,
-      isPublic,
-      invitedEmails: invited,
-      inviteCode,
-      formules
-    });
+      ? Math.random().toString(36).slice(2, 8).toUpperCase()
+      : null;
+    try {
+      const sessionId = await createSession({
+        name,
+        typeCampagne,
+        startDate: start,
+        endDate: end,
+        isPublic,
+        invitedEmails: invited,
+        inviteCode,
+        formules
+      });
 
-    document.body.removeChild(modal);
-    await loadSessions();
-    await openSession(sessionId);
+      document.body.removeChild(modal);
+      await loadSessions();
+      await openSession(sessionId);
 
-  } catch (e) {
-    console.error(e);
-    alert(e.message);
-  }
-};
+    } catch (e) {
+      console.error(e);
+      showModalFeedback(e.message);
+    }
+  };
 
 
+}
+*/
+function openCreateSessionModal() {
+  const modal = openModal(`
+    <div class="modal-card card" style="max-width:420px;width:100%">
+      <h3>Nouvelle Campagne de Lecture</h3>
+  
+      <input id="ns_name" placeholder="Nom de la campagne" />
+      <label style="margin-top:8px;display:block">
+    Type de campagne :
+    <select id="ns_type">
+      <option value="coran">Lecture Coran</option>
+      <option value="zikr">Série de Zikr</option>
+    </select>
+  </label>
+  
+  <div id="zikrFormulasCreate" style="display:none;margin-top:10px">
+    <h4>Formules de Zikr</h4>
+  
+    <div class="zikr-formula">
+      <input placeholder="Nom formule" class="zf-name" />
+      <input type="number" placeholder="Objectif" class="zf-target" />
+    </div>
+  
+    <button id="addFormulaBtn" class="btn small" style="margin-top:6px">
+      + Ajouter une formule
+    </button>
+  </div>
+  
+  
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <label style="flex:1">Début: <input id="ns_start" type="date" /></label>
+        <label style="flex:1">Fin: <input id="ns_end" type="date" /></label>
+      </div>
+  
+      <div style="margin-top:8px">
+        
+        <div class="visibility-switch">
+        <label>Visibilité :</label>
+        <span id="labelPrivate">Privée</span>
+          <label class="switch">
+            <input type="checkbox" id="ns_public" checked>
+            <span class="slider"></span>
+          </label>
+          <span id="labelPublic">Publique</span>
+        </div>
+      </div>
+  
+      <!-- Emails invités -->
+      <div id="invitedRow" style="margin-top:8px">
+        <label>Invités : 
+          <input id="ns_invited" placeholder="a@ex.com, b@ex.com" />
+        </label>
+      </div>
+  
+      <!-- Générer un code -->
+      <div id="genCodeRow" style="margin-top:8px">
+        <label><input id="ns_gen_code" type="checkbox" /> Un code d'invitation sera généré</label>
+      </div>
+  
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="ns_create" class="btn btn-success">Démarrer</button>
+        <button id="ns_cancel" class="btn">Annuler</button>
+      </div>
+    </div>`);
+
+  // ----- Références DOM (TOUJOURS AVANT utilisation) -----
+  const startDate = modal.querySelector("#ns_start");
+  const endDate = modal.querySelector("#ns_end");
+  const publicCheckbox = modal.querySelector("#ns_public");
+  const genCodeCheckbox = modal.querySelector("#ns_gen_code");
+  const invitedInput = modal.querySelector("#ns_invited");
+
+  // ----- Bouton CRÉER -----
+  modal.querySelector('#ns_create').onclick = async () => {
+    try {
+      const name = modal.querySelector('#ns_name').value.trim();
+      const typeCampagne = modal.querySelector('#ns_type').value;
+
+      if (!name) {
+        showModalFeedback('Donnez un nom à la campagne');
+        return;
+      }
+
+      let formules = [];
+
+      if (typeCampagne === 'zikr') {
+        modal.querySelectorAll('.zikr-formula').forEach(row => {
+          const fname = row.querySelector('.zf-name').value.trim();
+          const target = Number(row.querySelector('.zf-target').value);
+
+          if (fname && target > 0) {
+            formules.push({ name: fname, objectif: target });
+          }
+        });
+
+        if (!formules.length) {
+          showModalFeedback('Ajoutez au moins une formule de Zikr valide');
+          return;
+        }
+      }
+
+      const isPublic = publicCheckbox.checked;
+      const inviteCode = !isPublic
+        ? Math.random().toString(36).slice(2, 8).toUpperCase()
+        : null;
+
+      const sessionId = await createSession({
+        name,
+        typeCampagne,
+        startDate: startDate.value || null,
+        endDate: endDate.value || null,
+        isPublic,
+        invitedEmails: parseCSVemails(invitedInput.value),
+        inviteCode,
+        formules
+      });
+      
+      closeModal(modal);
+      await loadSessions();
+
+      const session = allVisibleSessions.find(s => s.id === sessionId);
+
+      if (!session) {
+        showModalFeedback("Session introuvable après création");
+        return;
+      }
+
+      await openSession(session);
+
+    } catch (e) {
+      console.error(e);
+      showModalFeedback(e.message);
+    }
+  };
+
+  // ----- Annuler -----
+  modal.querySelector('#ns_cancel').onclick = () => closeModal(modal);
 }
 
 function showCoranCampaign(session) {
@@ -1296,7 +1672,7 @@ function showCoranCampaign(session) {
 
 function enableDiscussion() {
   el.discussionSection.classList.remove('hidden');
-  
+
 }
 
 function disableDiscussion() {
@@ -1316,7 +1692,7 @@ function showZikrCampaign(session) {
   // A REMPLACER PAR LE CADRE DE SELECTION VALIDATION ZIKR COMME LE MEME CAS QUE SUR LES JUZ
   //document.getElementById('zikrMeta').innerHTML = `
   //  <small>
-    //  📅 ${session.startDate} → ${session.endDate}
+  //  📅 ${session.startDate} → ${session.endDate}
   //  </small>
   //`;
   /////////////////////////////////////////////
@@ -1391,17 +1767,17 @@ async function renderZikrFormulas(formules, sessionId) {
       uid: d.id,        // 🔥 UID réel
       ...d.data()
     }));
-    
-    
+
+
 
     const contributorsHtml = contributions.length
-    ? `
+      ? `
       <table class="zikr-table zikr-contribs-table">
         ${contributions.map(c => {
-          const isOwner = c.uid === auth.currentUser.uid;
-          const alreadyFinished = !!c.isFinished;
-  
-          return `
+        const isOwner = c.uid === auth.currentUser.uid;
+        const alreadyFinished = !!c.isFinished;
+
+        return `
             <tr class="zikr-contributor" data-uid="${c.uid}">
               <!-- Nom à gauche -->
               <td class="label contrib-name">
@@ -1431,79 +1807,25 @@ async function renderZikrFormulas(formules, sessionId) {
               </td>
             </tr>
           `;
-        }).join('')}
+      }).join('')}
       </table>
     `
-    : `<em class="no-contrib">Aucun contributeur</em>`;
-  
-  
-
-const card = document.createElement('div');
-
-card.className = `card juz zikr zikr-card ${status.key}`;
+      : `<em class="no-contrib">Aucun contributeur</em>`;
 
 
-card.dataset.formuleId = f.id;
-/*
-card.innerHTML = `
-    <div class="juz-header zikr-header">
-    <span class="zikr-title">
-      ${f.name} (${objectif})
-    </span>
 
-    <span class="juz-badge badge-${status.key}">
-      ${status.label}
-    </span>
-  </div>
+    const card = document.createElement('div');
 
-  <div class="zikr-body">
+    card.className = `card juz zikr zikr-card ${status.key}`;
 
 
-    <button class="toggle-contribs" type="button" aria-expanded="false">
-      <i class="fas fa-users"></i>
-      <span class="label">Contributeurs</span>
-      <i class="fas fa-chevron-down chevron"></i>
-    </button>
+    card.dataset.formuleId = f.id;
 
 
-    <div class="zikr-contribs hidden">
-      ${contributorsHtml}
-      <hr>
-      <div class="zikr-total">
-        Total choisi: <strong>${current}</strong>
-      </div>
-      <div class="zikr-total">
-        Total terminé: <strong>${finished}</strong>
-      </div>
-      
-
-    <div class="zikr-total">
-      <input
-        type="number"
-        min="1"
-        max="${reste}"
-        placeholder="choix"
-        class="zikr-input"
-        data-formule-id="${f.id}"
-        ${reste === 0 ? 'disabled' : ''}
-      />
-      <span class="zikr-reste">/ ${reste}</span>
-    </div>
-
-
-    </div>
-  </div>
-`;
-*/
-
-card.innerHTML = `
+    card.innerHTML = `
 <div class="juz-header zikr-header">
   <span class="zikr-title">
     ${f.name} (${objectif})
-  </span>
-
-  <span class="juz-badge badge-${status.key}">
-    ${status.label}
   </span>
 </div>
 
@@ -1511,7 +1833,7 @@ card.innerHTML = `
 
   <button class="toggle-contribs" type="button" aria-expanded="false">
     <i class="fas fa-users"></i>
-    <span class="label">Contributeurs</span>
+    <span class="juz-badge badge-${status.key}">${status.label}</span>
     <i class="fas fa-chevron-down chevron"></i>
   </button>
 
@@ -1521,33 +1843,33 @@ card.innerHTML = `
     <hr>
 
     <!-- Tableau sans bordure -->
-<table class="zikr-table zikr-totals-table">
-  <tr>
-    <td class="label">Total choisi</td>
-    <td class="value"><strong>${current}</strong></td>
-  </tr>
-  <tr>
-    <td class="label">Total terminé</td>
-    <td class="value"><strong>${finished}</strong></td>
-  </tr>
+    <table class="zikr-table zikr-totals-table">
+      <tr>
+        <td class="label">Total choisi</td>
+        <td class="value"><strong>${current}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Total terminé</td>
+        <td class="value"><strong>${finished}</strong></td>
+      </tr>
 
-  <!-- Input pleine largeur -->
-  <tr>
-    <td colspan="2">
-      <div class="zikr-input-wrapper" data-reste="${reste}">
-        <input
-          type="number"
-          min="1"
-          max="${reste}"
-          placeholder="choix"
-          class="zikr-input"
-          data-formule-id="${f.id}"
-          ${reste === 0 ? 'disabled' : ''}
-        />
-      </div>
-    </td>
-  </tr>
-</table>
+      <!-- Input pleine largeur -->
+      <tr>
+        <td colspan="2">
+          <div class="zikr-input-wrapper" data-reste="${reste}">
+            <input
+              type="number"
+              min="1"
+              max="${reste}"
+              placeholder="choix"
+              class="zikr-input"
+              data-formule-id="${f.id}"
+              ${reste === 0 ? 'disabled' : ''}
+            />
+          </div>
+        </td>
+      </tr>
+    </table>
 
 
 
@@ -1555,39 +1877,39 @@ card.innerHTML = `
 </div>
 `;
 
-card.querySelectorAll('.contrib-btn.finish')
-  .forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
+    card.querySelectorAll('.contrib-btn.finish')
+      .forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
 
-      const row = btn.closest('.zikr-contributor');
-      const uid = row.dataset.uid;
+          const row = btn.closest('.zikr-contributor');
+          const uid = row.dataset.uid;
 
-      // sécurité : seul l'utilisateur courant peut terminer
-      if (uid !== auth.currentUser.uid) {
-        showZikrFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
-        return;
-      }
+          // sécurité : seul l'utilisateur courant peut terminer
+          if (uid !== auth.currentUser.uid) {
+            showZikrFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
+            return;
+          }
 
-      const formulaId = card.dataset.formuleId;
-      await finishZikrContribution(currentSessionId, formulaId, card);
-    });
-  });
+          const formulaId = card.dataset.formuleId;
+          await finishZikrContribution(currentSessionId, formulaId, card);
+        });
+      });
 
 
     // 🔽 toggle contributeurs
 
-const toggleBtn = card.querySelector('.toggle-contribs');
-const contribsBox = card.querySelector('.zikr-contribs');
+    const toggleBtn = card.querySelector('.toggle-contribs');
+    const contribsBox = card.querySelector('.zikr-contribs');
 
-toggleBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
 
-  const isOpen = !contribsBox.classList.contains('hidden');
+      const isOpen = !contribsBox.classList.contains('hidden');
 
-  contribsBox.classList.toggle('hidden');
-  toggleBtn.setAttribute('aria-expanded', String(!isOpen));
-});
+      contribsBox.classList.toggle('hidden');
+      toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+    });
 
 
 
@@ -1697,25 +2019,25 @@ document.querySelectorAll('.auth-tab').forEach(tab => {
 
 document.getElementById('validateZikrChoices').addEventListener('click', async () => {
 
-    const cards = document.querySelectorAll('.zikr-card');
+  const cards = document.querySelectorAll('.zikr-card');
 
-    for (const card of cards) {
-      const input = card.querySelector('.zikr-input');
-      if (!input || input.disabled) continue;
+  for (const card of cards) {
+    const input = card.querySelector('.zikr-input');
+    if (!input || input.disabled) continue;
 
-      const value = Number(input.value);
-      if (!value || value <= 0) continue;
+    const value = Number(input.value);
+    if (!value || value <= 0) continue;
 
-      const formulaId = input.dataset.formuleId;
+    const formulaId = input.dataset.formuleId;
 
-      await validateZikrFormula(
-        currentSessionId,
-        formulaId,
-        card
-      );
-      updateLocalContributorUI(card, value);
-    }
-  });
+    await validateZikrFormula(
+      currentSessionId,
+      formulaId,
+      card
+    );
+    updateLocalContributorUI(card, value);
+  }
+});
 
 //FIN
 
@@ -1809,6 +2131,32 @@ async function validateZikrFormula(sessionId, formulaId, card) {
   );
 }
 
+function showModalFeedback(message, duration = 2500) {
+  // Supprime l'ancien feedback si existant
+  const old = document.querySelector('.modal-feedback');
+  if (old) old.remove();
+
+  // Crée le feedback
+  const feedback = document.createElement('div');
+  feedback.className = 'modal-feedback';
+  feedback.textContent = message;
+
+  document.body.appendChild(feedback);
+
+  // Force le rendu pour déclencher l'animation
+  requestAnimationFrame(() => {
+    feedback.classList.add('show');
+  });
+
+  // Supprime après duration
+  setTimeout(() => {
+    feedback.classList.remove('show');
+    feedback.addEventListener('transitionend', () => feedback.remove(), { once: true });
+  }, duration);
+}
+
+
+
 function showZikrFeedback(msg, type = 'success') {
   el.zikrFeedback.textContent = msg;
   el.zikrFeedback.className = `zikr-feedback ${type}`;
@@ -1834,13 +2182,24 @@ function openModal(html) {
   });
 
   document.body.appendChild(modal);
+
+  // déclenche l'animation après le rendu
+  requestAnimationFrame(() => {
+    modal.classList.add('open');
+  });
+
   return modal;
 }
 
 function closeModal(modal) {
-  document.body.style.overflow = '';
-  modal.remove();
+  // joue l'animation de sortie
+  modal.classList.remove('open');
+  modal.querySelector('.modal-card').addEventListener('transitionend', () => {
+    document.body.style.overflow = '';
+    modal.remove();
+  }, { once: true });
 }
+
 
 /* ---------- Popup invitation: même système que création de session ---------- */
 
@@ -1864,15 +2223,17 @@ function openInviteCodeModal() {
 
   modal.querySelector('#validateInviteCodeBtn').onclick = async () => {
     const code = document.getElementById("inviteCodeInput").value.trim();
-    const errorBox = document.getElementById("inviteError");
+    //const errorBox = document.getElementById("inviteError");
     const user = auth.currentUser;
 
     if (!code) {
-      errorBox.textContent = "Veuillez entrer un code.";
+
+      showModalFeedback("Veuillez entrer un code.");
       return;
     }
     if (!user) {
-      errorBox.textContent = "Vous devez être connecté.";
+      //errorBox.textContent = "Vous devez être connecté.";
+      showModalFeedback("Vous devez être connecté.");
       return;
     }
 
@@ -1880,7 +2241,7 @@ function openInviteCodeModal() {
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      errorBox.textContent = "Code invalide.";
+      showModalFeedback("Code invalide.");
       return;
     }
 
@@ -1888,7 +2249,7 @@ function openInviteCodeModal() {
     const sessionData = sessionDoc.data();
 
     if (sessionData.invitedEmails?.includes(user.email)) {
-      errorBox.textContent = "Vous êtes déjà invité.";
+      showModalFeedback("Vous êtes déjà invité.");
       return;
     }
 
@@ -1896,8 +2257,11 @@ function openInviteCodeModal() {
       invitedEmails: arrayUnion(user.email)
     });
 
-    errorBox.style.color = "#27ae60";
-    errorBox.textContent = "Invitation acceptée 🎉";
+    //errorBox.style.color = "#27ae60";
+    //errorBox.textContent = "Invitation acceptée 🎉";
+
+    showModalFeedback("Invitation acceptée 🎉");
+
 
     setTimeout(() => {
       document.body.removeChild(modal);
@@ -1913,7 +2277,7 @@ document.getElementById("joinWithCodeBtn")
 
 
 
-
+/*
 document.addEventListener("click", async (e) => {
   if (e.target.id !== "validateInviteCodeBtn") return;
 
@@ -1961,7 +2325,7 @@ document.addEventListener("click", async (e) => {
   }, 1200);
 });
 
-
+*/
 searchInput.addEventListener("input", () => {
   const term = searchInput.value.toLowerCase();
 
@@ -2078,26 +2442,47 @@ profileEditionLink?.addEventListener("click", (e) => {
 
 
 function openProfileCodeModal() {
-  const modal = openModal(`
-    <div class="modal-card card">
-      <h3>Mon profil</h3>
 
+  const modal = openModal(`
+      <div class="modal-card card">
+        <h3>Mon profil</h3>
+      
         <div class="profile-avatar">
-          <img id="profileAvatarImg" src="default.jpg" class="avatar-sm">
+          <img id="profileAvatarImg" src="default.jpg" style="cursor:pointer">
+          <label for="profileAvatarInput" class="change-avatar-btn">📷</label>
           <input type="file" id="profileAvatarInput" accept="image/*">
         </div>
-
+      
         <label>Pseudo</label>
         <input id="profilePseudo" maxlength="14" />
-
-      <p id="profileError" style="color:red;min-height:20px"></p>
-
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <button id="saveProfileBtn" class="btn btn-success">Enregistrer</button>
-        <button id="closeProfileModal" class="btn">Annuler</button>
+      
+        <p id="profileError"></p>
+      
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button id="saveProfileBtn" class="btn btn-success">Enregistrer</button>
+          <button id="closeProfileModal" class="btn">Annuler</button>
+        </div>
+  
+        <hr style="margin:16px 0">
+  
+        <button id="logoutFromProfile" class="btn btn-danger" style="width:100%">
+          Déconnexion
+        </button>
       </div>
-    </div>
-  `);
+    `);
+
+  const avatarInput = modal.querySelector('#profileAvatarInput');
+  const avatarImg = modal.querySelector('#profileAvatarImg');
+
+  avatarInput.addEventListener('change', () => {
+    const file = avatarInput.files[0];
+    if (!file) return;
+
+    const previewURL = URL.createObjectURL(file);
+    avatarImg.src = previewURL;
+  });
+  avatarImg.onclick = () => avatarInput.click();
+
 
   modal.querySelector('#closeProfileModal').onclick = () => closeModal(modal);
 
@@ -2110,18 +2495,18 @@ function openProfileCodeModal() {
     );
 
     if (!pseudo) {
-      alert("Pseudo invalide");
+      showModalFeedback("Pseudo invalide");
       return;
     }
 
-    const avatarFile =
-      document.getElementById('profileAvatarInput').files[0];
+    const avatarInput = document.getElementById('profileAvatarInput');
+    const avatarFile = avatarInput.files[0];
 
     let photoURL = user.photoURL || 'default.jpg';
 
     if (avatarFile) {
-      // 🔥 si tu ajoutes Firebase Storage plus tard
-      // photoURL = await uploadAvatar(...)
+      // ⚠️ temporaire : image locale (sera remplacée par Firebase Storage plus tard)
+      photoURL = document.getElementById('profileAvatarImg').src;
     }
 
     await updateProfile(user, {
@@ -2135,8 +2520,18 @@ function openProfileCodeModal() {
       updatedAt: serverTimestamp()
     });
 
-    alert('Profil mis à jour ✅');
+    showModalFeedback('Profil mis à jour ✅');
   };
+  modal.querySelector('#logoutFromProfile').onclick = async () => {
+    await signOut(auth);
+
+    closeModal(modal);
+    showPage('home');
+
+    document.getElementById('homeConnectBtn').style.display = 'inline-block';
+    document.getElementById('bottomActionBtn').style.display = 'none';
+  };
+
 }
 
 
@@ -2204,7 +2599,7 @@ function loadMessages(sessionId) {
           <div class="message-content">
             <strong>${m.authorPseudo}</strong>
             <div class="message-text">${m.text}</div>
-            <small class="message-time">${m.createdAt?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+            <small class="message-time">${m.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
           </div>
         </div>
       `;
