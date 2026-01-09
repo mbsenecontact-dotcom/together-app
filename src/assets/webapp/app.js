@@ -93,6 +93,9 @@ el.googleLogin.addEventListener('click', async () => {
 (async function init() {
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
+
+  
+
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       showPage('home');
@@ -153,6 +156,46 @@ el.googleLogin.addEventListener('click', async () => {
   document.getElementById('homeConnectBtn').addEventListener('click', () => showPage('authPage'));
   el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
 
+  const menuBtn = document.getElementById('sessionMenuBtn');
+  const menu = document.getElementById('sessionMenu');
+  
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = menuBtn.getAttribute('aria-expanded') === 'true';
+  
+    menuBtn.setAttribute('aria-expanded', String(!open));
+    menu.classList.toggle('hidden', open);
+  });
+  
+  // clic hors menu → fermer
+  document.addEventListener('click', () => {
+    menu.classList.add('hidden');
+    menuBtn.setAttribute('aria-expanded', 'false');
+  });
+
+  document.getElementById('menuShare').onclick = () => {
+    document.getElementById('shareBtn')?.click();
+  };
+  
+  document.getElementById('menuEdit').onclick = () => {
+    openEditSessionModal(currentSession); // à créer si besoin
+  };
+  
+  document.getElementById('menuClose').onclick = () => {
+    document.getElementById('closeSessionBtn')?.click();
+  };
+  
+  document.getElementById('menuDelete').onclick = async () => {
+    if (!confirm('Supprimer définitivement cette campagne ?')) return;
+  
+    await deleteDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
+    showModalFeedback('Campagne supprimée');
+  
+    sessionView.hidden = true;
+    await loadSessions();
+  };
+  
+
 })();
 
 
@@ -198,6 +241,16 @@ tabZikr.onclick = () => {
 
 /* ---------- Helpers ---------- */
 
+function scrollToSessionTitle() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.sessionTitle.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    });
+  });
+}
 
 
 function showPage(id) {
@@ -551,6 +604,9 @@ const sessionMeta = document.getElementById('sessionMeta');
 const stats = document.getElementById('stats');
 const closeBtn = document.getElementById('closeSessionBtn');
 
+
+const menuShare = document.getElementById('menuShare');
+
 async function openSession(session) {
 
   if (!session || !session.id) {
@@ -564,12 +620,22 @@ async function openSession(session) {
   currentSession = session; // stocke la session complète
   currentSessionId = session.id;
 
+   // Charger les métadonnées
+   const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
+   if (!metaSnap.exists()) return showModalFeedback('Session introuvable');
+   const meta = metaSnap.data();
+ 
+ 
+   const isAdmin = auth.currentUser.uid === meta.createdBy;
+   const hasInviteCode = !!meta.inviteCode;
+   const isClosed = meta.status === 'closed';
   // Affiche l'entête
   // sessionHeader.classList.remove('hidden');
+  sessionTitle.textContent = meta.name;
 
   // Personnalisation selon type de campagne
   if (session.typeCampagne === 'zikr') {
-    sessionTitle.textContent = 'Série de Zikr';
+   // sessionTitle.textContent = 'Série de Zikr';
     stats.style.display = 'none';
     closeBtn.textContent = 'Clôturer la série de Zikr';
 
@@ -577,7 +643,7 @@ async function openSession(session) {
     showZikrCampaign(session);
 
   } else {
-    sessionTitle.textContent = 'Lecture Coran';
+    //sessionTitle.textContent = 'Lecture Coran';
     stats.style.display = 'block';
     closeBtn.textContent = 'Clôturer la campagne';
 
@@ -586,19 +652,18 @@ async function openSession(session) {
 
     showCoranCampaign(session);
   }
-  // Charger les métadonnées
-  const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
-  if (!metaSnap.exists()) return showModalFeedback('Session introuvable');
-  const meta = metaSnap.data();
+ 
+
+  
+  el.sessionMeta.textContent =
+  `${meta.startDate || '—'} → ${meta.endDate || '—'} • ` +
+  `${meta.isPublic ? 'Publique' : 'Privée'} • ` +
+  `${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}`;
 
 
-  const isAdmin = auth.currentUser.uid === meta.createdBy;
-  const hasInviteCode = !!meta.inviteCode;
-  const isClosed = meta.status === 'closed';
-
+/*
 
   el.sessionMeta.innerHTML = `
-  <div><strong>Description :</strong> ${meta.name}</div>
   <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
   <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
   <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
@@ -619,6 +684,18 @@ async function openSession(session) {
     </div>
   ` : ``}
 `;
+*/
+
+const menuShare = document.getElementById('menuShare');
+const inviteCodeValue = document.getElementById('inviteCodeValue');
+
+if (isAdmin && hasInviteCode) {
+  inviteCodeValue.textContent = 'Partager code : ' + meta.inviteCode;
+  menuShare.style.display = 'flex';
+} else {
+  menuShare.style.display = 'none';
+}
+
 
 
   if (isAdmin && hasInviteCode) {
@@ -678,6 +755,7 @@ async function openSession(session) {
   el.sessionView.hidden = false;
   initSessionTabs(session);
   // état par défaut
+  scrollToSessionTitle();
 
   const { onSnapshot: onSnap, query: q, collection: col } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
   const subcol = col(db, SESSIONS_COLLECTION, currentSessionId, 'juz');
@@ -692,7 +770,8 @@ async function openSession(session) {
 
   // Scroll automatique vers le container
   //sessionView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  sessionTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  //sessionTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  
 
   // close session button visible only to admin
   //const user = auth.currentUser;
@@ -997,63 +1076,6 @@ function renderGrid(juzData) {
       statusLabel = `terminé`;
       statusClass = 'badge-finished';
     }
-    /*
-            card.innerHTML = `
-          <div class="juz-header">
-            <label class="juz-checkbox">
-              <input
-                type="checkbox"
-                class="juz-check"
-                data-juz="${j.number}"
-                ${j.status === 'finished' ? 'checked disabled' : ''}
-              />
-              <span class="juz-number">Juz ${j.number}</span>
-            </label>
-          </div>
-    
-          <div class="zikr-body">
-    
-              <button class="toggle-contribs" type="button" aria-expanded="false">
-                <i class="fas fa-users"></i>
-                <span class="juz-badge ${statusClass}">${statusLabel}</span>
-                <i class="fas fa-chevron-down chevron"></i>
-              </button>
-    
-              <div class="zikr-contribs hidden">
-                <span>${pseudo != '' ? pseudo : "Aucun contributeur"}</span>
-              
-                <hr>
-    
-                <!-- Tableau sans bordure -->
-                <table class="zikr-table zikr-totals-table">
-                  <tr>
-                    <td class="label">Juz n° :</td>
-                    <td class="value"><strong>X</strong></td>
-                  </tr>
-                  <tr>
-                    <td class="label">Description :</td>
-                    <td class="value"><strong>Introduction du Coran, fondements de la foi et appel à l’adoration sincère.</strong></td>
-                  </tr>
-                  <tr>
-                    <td class="label">Début : </td>
-                    <td class="value"><strong>S. n°1 / V. n°1</strong></td>
-                  </tr>
-              <tr>
-                    <td class="label">Fin : </td>
-                    <td class="value"><strong>S. n°2 / V. n°141</strong></td>
-                  </tr>
-                  <!-- Input pleine largeur -->
-                  <tr>
-                    <td colspan="2">
-                      <div >
-                        <button class="btn-sucess">Valider</button>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-          </div>
-        `;*/
 
     card.innerHTML = `
     <div class="juz-header">
@@ -1106,6 +1128,19 @@ function renderGrid(juzData) {
     </div>
   `;
 
+  const toggleBtn = card.querySelector('.toggle-contribs');
+const contribsBox = card.querySelector('.zikr-contribs');
+
+toggleBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+
+  const isOpen = toggleBtn.getAttribute('aria-expanded') === 'true';
+
+  toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+  contribsBox.classList.toggle('hidden', isOpen);
+});
+
+  
     // 🖱️ clic sur la carte → toggle checkbox (sauf disabled)
     card.addEventListener('click', e => {
       if (e.target.tagName === 'INPUT') return;
@@ -1529,7 +1564,7 @@ function openCreateSessionModal() {
 function openCreateSessionModal() {
   const modal = openModal(`
     <div class="modal-card card" style="max-width:420px;width:100%">
-      <h3>Nouvelle Campagne de Lecture</h3>
+      <h3>Nouvelle Campagne</h3>
   
       <input id="ns_name" placeholder="Nom de la campagne" />
       <label style="margin-top:8px;display:block">
@@ -1713,14 +1748,14 @@ function showZikrCampaign(session) {
   });
 }
 
-
+/*
 document.addEventListener("click", e => {
   if (e.target.classList.contains("toggle-contribs")) {
     const contribs = e.target.nextElementSibling;
     contribs.classList.toggle("hidden");
   }
 });
-
+*/
 
 
 function getZikrStatus(objectif, current, finished) {
@@ -2380,23 +2415,23 @@ function refreshGrid() {
 const scrollTopBtn = document.getElementById('scrollTopBtn');
 const scrollDownBtn = document.getElementById('scrollDownBtn');
 
-// Afficher ou cacher les boutons selon scroll
 window.addEventListener('scroll', () => {
-  if (window.scrollY > 100) {
-    scrollTopBtn.style.display = 'flex';
-    scrollDownBtn.style.display = 'flex';
-  } else {
-    scrollTopBtn.style.display = 'none';
-    scrollDownBtn.style.display = 'none';
-  }
+  const y = window.scrollY;
+  const max = document.body.scrollHeight - window.innerHeight;
+
+  // bouton haut → visible si on n'est pas déjà en bas
+  scrollDownBtn.style.display = y < max - 100 ? 'flex' : 'none';
+
+  // bouton bas → visible si on a scrollé
+  scrollTopBtn.style.display = y > 100 ? 'flex' : 'none';
 });
 
-// Scroll top
+// ⬆️ remonter
 scrollTopBtn.addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-// Scroll down (vers le bas de la page)
+// ⬇️ descendre
 scrollDownBtn.addEventListener('click', () => {
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 });

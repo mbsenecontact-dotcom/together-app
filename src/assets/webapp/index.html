@@ -129,22 +129,49 @@
           <button id="tabCoran" class="tab-btn active">Lecture Coran</button>
           <button id="tabZikr" class="tab-btn">Série de Zikr</button>
         </div>
+
+        
         <div id="sessions"></div>
       </div>
 
-      <!-- Entête de session séparée
-      <div id="sessionHeader" class="session-header card hidden">
 
-        <h3 id="sessionTitle">Lecture</h3>
-        <div id="sessionMeta"></div>
-        <div id="stats" class="stats">Terminés : 0/30</div>
-        <div style="margin-top:12px;">
-          <button id="closeSessionBtn" class="btn btn-danger" style="display:none">Clôturer la campagne</button>
-        </div>
-
-      </div> -->
       <div id="sessionView" class="card" hidden>
         <h3 id="sessionTitle">Lecture</h3>
+        <div class="session-actions">
+          <button
+            id="sessionMenuBtn"
+            class="icon-btn"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-label="Actions de la campagne"
+          >
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
+        
+          <div id="sessionMenu" class="session-menu hidden" role="menu">
+            <button class="menu-item" id="menuShare" role="menuitem">
+              <i class="fa-solid fa-share-nodes"></i>
+              <span class="value" id="inviteCodeValue"></span>
+            </button>
+            
+        
+            <button class="menu-item" id="menuEdit" role="menuitem">
+              <i class="fa-solid fa-pen"></i>
+              Modifier la campagne
+            </button>
+        
+            <button class="menu-item danger" id="menuClose" role="menuitem">
+              <i class="fa-solid fa-lock"></i>
+              Clôturer la campagne
+            </button>
+        
+            <button class="menu-item danger" id="menuDelete" role="menuitem">
+              <i class="fa-solid fa-trash"></i>
+              Supprimer la campagne
+            </button>
+          </div>
+        </div>
+        
         <div id="sessionMeta"></div>
         <div id="stats" class="stats">Terminés : 0/30</div>
         <div style="margin-top:12px;">
@@ -247,14 +274,22 @@
 
 
 
-  <!-- Scroll Up -->
-<button id="scrollTopBtn" class="scroll-btn" aria-label="Retour en haut">
-  ⬆️
+<!-- Scroll Down (en haut → aller en bas) -->
+<button
+  id="scrollDownBtn"
+  class="scroll-btn scroll-btn-top"
+  aria-label="Descendre"
+>
+  <i class="fas fa-chevron-down"></i>
 </button>
 
-<!-- Scroll Down -->
-<button id="scrollDownBtn" class="scroll-btn" aria-label="Descendre">
-  ⬇️
+<!-- Scroll Up (en bas → aller en haut) -->
+<button
+  id="scrollTopBtn"
+  class="scroll-btn scroll-btn-bottom"
+  aria-label="Retour en haut"
+>
+  <i class="fas fa-chevron-up"></i>
 </button>
 
 

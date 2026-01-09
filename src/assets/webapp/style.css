@@ -528,44 +528,66 @@ main {
 
 
 /* -------- Bouton retour en haut -------- */
-/* Boutons scroll fixed moderne */
+
+
+/* 
+#scrollTopBtn {
+  bottom: calc(var(--bottom-bar-height) + 72px);
+  right: 18px;
+}
+
+
+#scrollDownBtn {
+  bottom: calc(var(--bottom-bar-height) + 123px); 
+  right: 18px;
+}*/
+
+/* ===== Scroll chevrons WhatsApp style ===== */
+
 .scroll-btn {
   position: fixed;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: none;
   background: #fff;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
   cursor: pointer;
-  font-size: 20px;
-  display: flex;
+
+  display: none; /* contrôlé par JS */
   align-items: center;
   justify-content: center;
-  z-index: var(z-scroll-btn);/* au-dessus du formulaire */
-  transition: transform 0.2s, background 0.2s;
+
+  z-index: var(--z-scroll-btn);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-/* Hover & active */
+
+.scroll-btn i {
+  font-size: 18px;
+  color: #555;
+}
+
+/* Hover / active */
 .scroll-btn:hover {
   transform: scale(1.05);
-  background: #f0f0f0;
+  background: #f2f2f2;
 }
 
 .scroll-btn:active {
   transform: scale(0.95);
 }
 
-/* Position scroll up */
-#scrollTopBtn {
-  bottom: calc(var(--bottom-bar-height) + 72px);
-  right: 18px;
+/* 🔽 bouton HAUT (descendre) */
+.scroll-btn-top {
+  top: 90px;               /* sous le header */
+  right: 16px;
 }
 
-/* Position scroll down */
-#scrollDownBtn {
-  bottom: calc(var(--bottom-bar-height) + 123px); /* juste au-dessus du scroll up */
-  right: 18px;
+/* 🔼 bouton BAS (remonter) */
+.scroll-btn-bottom {
+  bottom: calc(var(--bottom-bar-height) + 72px);
+  right: 16px;
 }
 
 
@@ -1789,4 +1811,85 @@ textarea::placeholder {
 .modal-card textarea {
   width: 100%;
   margin-top: 4px;
+}
+/* ===== Menu actions session ===== */
+
+.session-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+/* bouton ⋮ */
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+}
+
+.icon-btn:hover {
+  background: #f2f2f2;
+}
+
+/* menu */
+.session-menu {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  min-width: 220px;
+
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  z-index: 100;
+}
+
+.session-menu.hidden {
+  display: none;
+}
+
+/* item */
+.menu-item {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  text-align: left;
+}
+
+.menu-item i {
+  width: 18px;
+  text-align: center;
+  color: #666;
+}
+
+.menu-item:hover {
+  background: #f5f5f5;
+}
+
+.menu-item.danger {
+  color: #c0392b;
+}
+
+.menu-item.danger i {
+  color: #c0392b;
+}
+
+#sessionView {
+  position: relative;
 }
