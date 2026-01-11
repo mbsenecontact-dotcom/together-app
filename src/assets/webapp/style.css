@@ -241,13 +241,7 @@ body {
   background: #A5D6A7
 }
 
-.juz.assigned {
-  background: #FFE082
-}
 
-.juz.finished {
-  background: #81D4FA
-}
 
 small {
   display: block;
@@ -530,17 +524,7 @@ main {
 /* -------- Bouton retour en haut -------- */
 
 
-/* 
-#scrollTopBtn {
-  bottom: calc(var(--bottom-bar-height) + 72px);
-  right: 18px;
-}
 
-
-#scrollDownBtn {
-  bottom: calc(var(--bottom-bar-height) + 123px); 
-  right: 18px;
-}*/
 
 /* ===== Scroll chevrons WhatsApp style ===== */
 
@@ -910,30 +894,7 @@ main {
   background: #ddd;
 }
 
-/* Modal feedback temporaire */
-.modal-feedback {
-  position: fixed;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--accent);
-  color: #fff;
-  padding: 14px 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  font-size: 1rem;
-  font-weight: 500;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  z-index: 2000;
-}
 
-/* Active */
-.modal-feedback.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
 
 
 /* Erreur */
@@ -1128,11 +1089,8 @@ main {
   display: none;
 }
 
-.juz-actions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
+
+
 
 .juz.disabled {
   opacity: 0.55;
@@ -1610,37 +1568,176 @@ main {
 
 
 
-.zikr-input-wrapper {
-  position: relative;
+
+
+
+
+
+/* Bouton */
+.zikr-validate-btn {
   width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  background: #2ecc71;
+  color: #fff;
 }
 
-.zikr-input {
+
+
+
+
+
+.juz.assigned {
+  background: #FFE082
+}
+
+.juz.finished {
+  background: #81D4FA
+}
+
+
+.btn-assign {
+  
   width: 100%;
-  padding: 4px 38px 4px 6px; /* espace pour / reste */
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
   font-size: 14px;
-  text-align: right;
-  box-sizing: border-box;
+  font-weight: 600;
+  cursor: pointer;
+
+  background: #2ecc71;
+  color: #fff;
+}
+
+.btn-finish {
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  background-color: #007bff; /* bleu */
+  
+  color: #fff;
+}
+
+input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+
+
+.modal-feedback {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  color: #fff;
+}
+
+
+
+
+
+.modal-feedback.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Types */
+.modal-feedback.success { background: #198754; } /* vert */
+.modal-feedback.error   { background: #dc3545; } /* rouge */
+.modal-feedback.system  { background: #fd7e14; } /* orange */
+.modal-feedback.info    { background: #0d6efd; } /* bleu */
+
+.modal-feedback .icon {
+  font-size: 18px;
 }
 
 
 
 /* suffixe / reste toujours visible */
-.zikr-input-wrapper::after {
-  content: "/ " attr(data-reste);
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px;
-  color: #777;
-  pointer-events: none;
+
+.juz-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* espace entre les boutons */
 }
 
-/* placeholder centré quand vide */
+.juz-actions button {
+  width: 100%;
+  display: block;
+}
+
+
+
+.zikr-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Input */
+.zikr-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  text-align: right;
+}
+
+/* Placeholder centré */
 .zikr-input:placeholder-shown {
   text-align: center;
 }
+
+/* Bouton */
+.zikr-validate-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  background: #2ecc71;
+  color: #fff;
+}
+
+.zikr-validate-btn:hover:not(:disabled) {
+  background: #27ae60;
+}
+
+.zikr-validate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+
+
+
 
 
 .auth-card {
@@ -1892,4 +1989,20 @@ textarea::placeholder {
 
 #sessionView {
   position: relative;
+}
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #2980b9;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 6px;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
 }

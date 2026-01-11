@@ -94,7 +94,7 @@ el.googleLogin.addEventListener('click', async () => {
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
 
-  
+
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -108,7 +108,7 @@ el.googleLogin.addEventListener('click', async () => {
       user.providerData.some(p => p.providerId === 'password') &&
       !user.emailVerified
     ) {
-      showModalFeedback('Veuillez vérifier votre email.');
+      showModalFeedback('Veuillez vérifier votre email.', "info");
       await signOut(auth);
       return;
     }
@@ -158,15 +158,15 @@ el.googleLogin.addEventListener('click', async () => {
 
   const menuBtn = document.getElementById('sessionMenuBtn');
   const menu = document.getElementById('sessionMenu');
-  
+
   menuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = menuBtn.getAttribute('aria-expanded') === 'true';
-  
+
     menuBtn.setAttribute('aria-expanded', String(!open));
     menu.classList.toggle('hidden', open);
   });
-  
+
   // clic hors menu → fermer
   document.addEventListener('click', () => {
     menu.classList.add('hidden');
@@ -176,25 +176,25 @@ el.googleLogin.addEventListener('click', async () => {
   document.getElementById('menuShare').onclick = () => {
     document.getElementById('shareBtn')?.click();
   };
-  
+
   document.getElementById('menuEdit').onclick = () => {
     openEditSessionModal(currentSession); // à créer si besoin
   };
-  
+  /*
   document.getElementById('menuClose').onclick = () => {
     document.getElementById('closeSessionBtn')?.click();
-  };
-  
+  };*/
+
   document.getElementById('menuDelete').onclick = async () => {
     if (!confirm('Supprimer définitivement cette campagne ?')) return;
-  
+
     await deleteDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
     showModalFeedback('Campagne supprimée');
-  
+
     sessionView.hidden = true;
     await loadSessions();
   };
-  
+
 
 })();
 
@@ -240,6 +240,22 @@ tabZikr.onclick = () => {
 };
 
 /* ---------- Helpers ---------- */
+
+function showSessionsPage() {
+  document.getElementById('sessionsList').hidden = false;
+  document.getElementById('sessionView').hidden = true;
+
+  // optionnel : reset scroll
+  window.scrollTo({ top: 0 });
+}
+
+function showSessionPage() {
+  document.getElementById('sessionsList').hidden = true;
+  document.getElementById('sessionView').hidden = false;
+
+  window.scrollTo({ top: 0 });
+}
+
 
 function scrollToSessionTitle() {
   requestAnimationFrame(() => {
@@ -585,10 +601,20 @@ function renderSessions(list) {
       </div>
     `;
 
-    row.addEventListener('click', () => openSession(session));
+    // row.addEventListener('click', () => openSession(session));
+    row.addEventListener('click', () => {
+      showSessionPage();
+      openSession(session);
+    });
+
+
     el.sessionsDiv.appendChild(row);
   });
 }
+
+document.getElementById('backToSessionsBtn').addEventListener('click', () => {
+  showSessionsPage();
+});
 
 
 /**
@@ -602,7 +628,7 @@ let unsubscribers = [];
 const sessionTitle = document.getElementById('sessionTitle');
 const sessionMeta = document.getElementById('sessionMeta');
 const stats = document.getElementById('stats');
-const closeBtn = document.getElementById('closeSessionBtn');
+//const closeBtn = document.getElementById('closeSessionBtn');
 
 
 const menuShare = document.getElementById('menuShare');
@@ -612,7 +638,7 @@ async function openSession(session) {
   if (!session || !session.id) {
     throw new Error("openSession attend une session complète");
   }
-  
+
   // cleanup listeners
   unsubscribers.forEach(u => u && u());
   unsubscribers = [];
@@ -620,24 +646,24 @@ async function openSession(session) {
   currentSession = session; // stocke la session complète
   currentSessionId = session.id;
 
-   // Charger les métadonnées
-   const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
-   if (!metaSnap.exists()) return showModalFeedback('Session introuvable');
-   const meta = metaSnap.data();
- 
- 
-   const isAdmin = auth.currentUser.uid === meta.createdBy;
-   const hasInviteCode = !!meta.inviteCode;
-   const isClosed = meta.status === 'closed';
+  // Charger les métadonnées
+  const metaSnap = await getDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
+  if (!metaSnap.exists()) return showModalFeedback('Session introuvable', "error");
+  const meta = metaSnap.data();
+
+
+  const isAdmin = auth.currentUser.uid === meta.createdBy;
+  const hasInviteCode = !!meta.inviteCode;
+  const isClosed = meta.status === 'closed';
   // Affiche l'entête
   // sessionHeader.classList.remove('hidden');
   sessionTitle.textContent = meta.name;
 
   // Personnalisation selon type de campagne
   if (session.typeCampagne === 'zikr') {
-   // sessionTitle.textContent = 'Série de Zikr';
+    // sessionTitle.textContent = 'Série de Zikr';
     stats.style.display = 'none';
-    closeBtn.textContent = 'Clôturer la série de Zikr';
+    //closeBtn.textContent = 'Clôturer la série de Zikr';
 
     document.getElementById('sessionView').classList.remove('hidden');
     showZikrCampaign(session);
@@ -645,56 +671,56 @@ async function openSession(session) {
   } else {
     //sessionTitle.textContent = 'Lecture Coran';
     stats.style.display = 'block';
-    closeBtn.textContent = 'Clôturer la campagne';
+    //closeBtn.textContent = 'Clôturer la campagne';
 
     // Affiche uniquement la grille Juz
     document.getElementById('sessionView').classList.remove('hidden');
 
     showCoranCampaign(session);
   }
- 
 
-  
+
+
   el.sessionMeta.textContent =
-  `${meta.startDate || '—'} → ${meta.endDate || '—'} • ` +
-  `${meta.isPublic ? 'Publique' : 'Privée'} • ` +
-  `${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}`;
+    `${meta.startDate || '—'} → ${meta.endDate || '—'} • ` +
+    `${meta.isPublic ? 'Publique' : 'Privée'} • ` +
+    `${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}`;
 
 
-/*
-
-  el.sessionMeta.innerHTML = `
-  <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
-  <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
-  <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
-
-  ${isAdmin && hasInviteCode ? `
-    <div id="showCodeInvitation" class="invite-code-box">
-      <div class="invite-label">Code invitation</div>
-      <div class="invite-code">${meta.inviteCode}</div>
-
-      <div class="invite-actions">
-        <button class="share-btn icon-only" id="shareBtn" title="Partager">
-  <i class="fa-solid fa-share-nodes"></i>
-</button>
-
+  /*
+  
+    el.sessionMeta.innerHTML = `
+    <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
+    <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
+    <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
+  
+    ${isAdmin && hasInviteCode ? `
+      <div id="showCodeInvitation" class="invite-code-box">
+        <div class="invite-label">Code invitation</div>
+        <div class="invite-code">${meta.inviteCode}</div>
+  
+        <div class="invite-actions">
+          <button class="share-btn icon-only" id="shareBtn" title="Partager">
+    <i class="fa-solid fa-share-nodes"></i>
+  </button>
+  
+        </div>
+  
+        
       </div>
+    ` : ``}
+  `;
+  */
 
-      
-    </div>
-  ` : ``}
-`;
-*/
+  const menuShare = document.getElementById('menuShare');
+  const inviteCodeValue = document.getElementById('inviteCodeValue');
 
-const menuShare = document.getElementById('menuShare');
-const inviteCodeValue = document.getElementById('inviteCodeValue');
-
-if (isAdmin && hasInviteCode) {
-  inviteCodeValue.textContent = 'Partager code : ' + meta.inviteCode;
-  menuShare.style.display = 'flex';
-} else {
-  menuShare.style.display = 'none';
-}
+  if (isAdmin && hasInviteCode) {
+    inviteCodeValue.textContent = 'Partager code : ' + meta.inviteCode;
+    menuShare.style.display = 'flex';
+  } else {
+    menuShare.style.display = 'none';
+  }
 
 
 
@@ -721,7 +747,7 @@ if (isAdmin && hasInviteCode) {
   }
 
   // Afficher ou cacher bouton Clôturer selon statut
-  closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
+  //closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
 
 
   //User can Access Discussion
@@ -752,7 +778,7 @@ if (isAdmin && hasInviteCode) {
     arr.sort((a, b) => (a.number || 0) - (b.number || 0));
   }
   renderGrid(arr);
-  el.sessionView.hidden = false;
+  //el.sessionView.hidden = false;
   initSessionTabs(session);
   // état par défaut
   scrollToSessionTitle();
@@ -771,7 +797,7 @@ if (isAdmin && hasInviteCode) {
   // Scroll automatique vers le container
   //sessionView.scrollIntoView({ behavior: 'smooth', block: 'start' });
   //sessionTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  
+
 
   // close session button visible only to admin
   //const user = auth.currentUser;
@@ -784,8 +810,8 @@ if (isAdmin && hasInviteCode) {
 
   // --- Campagne déjà clôturée ---
   if (isClosed) {
-    closeBtn.style.display = 'inline-block';
-    closeBtn.classList.add('is-closed');
+    // closeBtn.style.display = 'inline-block';
+    //closeBtn.classList.add('is-closed');
 
     if (inviteBox) {
       inviteBox.classList.add('is-closed');
@@ -841,10 +867,10 @@ if (isAdmin && hasInviteCode) {
   };
   // --- Campagne ouverte ---
   if (isAdmin && allFinished) {
-    closeBtn.style.display = 'inline-block';
-    closeBtn.classList.remove('is-closed');
+    //closeBtn.style.display = 'inline-block';
+    //closeBtn.classList.remove('is-closed');
 
-    closeBtn.onclick = async () => {
+    el.closeSessionBtn.onclick = async () => {
       if (!confirm('Clore définitivement cette campagne ?')) return;
 
       await updateDoc(
@@ -855,16 +881,16 @@ if (isAdmin && hasInviteCode) {
         }
       );
 
-      showModalFeedback('Campagne clôturée');
+      showModalFeedback('Campagne clôturée', "success");
 
       // Griser immédiatement l’UI
-      closeBtn.classList.add('is-closed');
+      // closeBtn.classList.add('is-closed');
       if (inviteBox) inviteBox.classList.add('is-closed');
 
       await loadSessions();
     };
   } else {
-    closeBtn.style.display = 'none';
+    // closeBtn.style.display = 'none';
   }
 }
 
@@ -1080,12 +1106,6 @@ function renderGrid(juzData) {
     card.innerHTML = `
     <div class="juz-header">
       <label class="juz-checkbox">
-        <input
-          type="checkbox"
-          class="juz-check"
-          data-juz="${j.number}"
-          ${j.status === 'finished' ? 'checked disabled' : ''}
-        />
         <span class="juz-number">Juz ${j.number}</span>
       </label>
     </div>
@@ -1121,37 +1141,106 @@ function renderGrid(juzData) {
     <span class="value">${juzDetails[j.number].fin}</span>
   </div>
 
-  <button class="btn-success">Valider</button>
+
+  <div class="juz-actions">
+  <button class="btn-assign">
+    Choisir
+  </button>
+  <button class="btn-finish">
+    Terminer
+  </button>
 </div>
+</div>
+
 
       </div>
     </div>
   `;
 
-  const toggleBtn = card.querySelector('.toggle-contribs');
-const contribsBox = card.querySelector('.zikr-contribs');
+    const assignBtn = card.querySelector('.btn-assign');
+    const finishBtn = card.querySelector('.btn-finish');
 
-toggleBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
+    const user = auth.currentUser;
+    const isMine = j.assignedTo === user?.uid;
 
-  const isOpen = toggleBtn.getAttribute('aria-expanded') === 'true';
+    // États des boutons
+    if (j.status === 'free') {
+      finishBtn.style.display = 'none';
+    }
 
-  toggleBtn.setAttribute('aria-expanded', String(!isOpen));
-  contribsBox.classList.toggle('hidden', isOpen);
-});
+    if (j.status === 'assigned') {
+      assignBtn.style.display = 'none';
 
-  
-    // 🖱️ clic sur la carte → toggle checkbox (sauf disabled)
-    card.addEventListener('click', e => {
-      if (e.target.tagName === 'INPUT') return;
+      if (!isMine) {
+        finishBtn.disabled = true;
+      }
+    }
 
-      const checkbox = card.querySelector('.juz-check');
-      if (checkbox.disabled) return;
+    if (j.status === 'finished') {
+      assignBtn.style.display = 'none';
+      finishBtn.style.display = 'none';
+    }
 
-      checkbox.checked = !checkbox.checked;
-      // 🔥 FORCE la mise à jour globale
-      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const toggleBtn = card.querySelector('.toggle-contribs');
+    const contribsBox = card.querySelector('.zikr-contribs');
+
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      const isOpen = toggleBtn.getAttribute('aria-expanded') === 'true';
+
+      toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+      contribsBox.classList.toggle('hidden', isOpen);
     });
+
+    assignBtn?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const userSnap = await getDoc(doc(db, 'users', user.uid));
+      const pseudo = userSnap.data()?.pseudo || 'Utilisateur';
+
+      await updateDoc(
+        doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(j.number)),
+        {
+          status: 'assigned',
+          assignedTo: user.uid,
+          assignedPseudo: pseudo,
+          assignedAt: serverTimestamp()
+        }
+      );
+    });
+
+
+    finishBtn?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+
+      const user = auth.currentUser;
+      if (!user || j.assignedTo !== user.uid) return;
+
+      await updateDoc(
+        doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(j.number)),
+        {
+          status: 'finished',
+          finishedAt: serverTimestamp()
+        }
+      );
+    });
+
+    // 🖱️ clic sur la carte → toggle checkbox (sauf disabled)
+    /*  card.addEventListener('click', e => {
+        if (e.target.tagName === 'INPUT') return;
+  
+        const checkbox = card.querySelector('.juz-check');
+        if (checkbox.disabled) return;
+  
+        checkbox.checked = !checkbox.checked;
+        // 🔥 FORCE la mise à jour globale
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      });*/
 
 
 
@@ -1159,130 +1248,10 @@ toggleBtn.addEventListener('click', (e) => {
   });
 
   el.stats.textContent = `Terminés : ${finished} / 30`;
-  setupJuzCheckboxes();
+  // setupJuzCheckboxes();
 }
 
-
-function setupJuzCheckboxes() {
-  const checkboxes = document.querySelectorAll('.juz-check');
-  const checkAll = document.getElementById('checkAllJuz');
-
-  // Checkbox individuelle
-  checkboxes.forEach(cb => {
-    cb.addEventListener('change', updateJuzSelectionUI);
-  });
-
-  // Select all
-  checkAll.onchange = () => {
-    checkboxes.forEach(cb => {
-      if (!cb.disabled) {
-        cb.checked = checkAll.checked;
-      }
-    });
-    updateJuzSelectionUI();
-  };
-}
-
-function updateJuzSelectionUI() {
-  const checkboxes = [...document.querySelectorAll('.juz-check')];
-  const selected = checkboxes.filter(cb => cb.checked && !cb.disabled);
-
-  // 🔘 select all
-  const checkAll = document.getElementById('checkAllJuz');
-  const selectable = checkboxes.filter(cb => !cb.disabled);
-
-  checkAll.checked =
-    selectable.length > 0 &&
-    selectable.every(cb => cb.checked);
-
-  // 📦 barre de sélection
-  const bar = document.getElementById('juzSelectionBar');
-  bar.classList.toggle('hidden', selected.length === 0);
-
-  // 🏷️ label
-  const label = document.getElementById('selectedJuzLabel');
-  label.textContent = `Sélection Juz : ${selected
-    .map(cb => cb.dataset.juz)
-    .join(', ')}`;
-}
-
-document.getElementById('validateJuzBtn').onclick = async () => {
-  const user = auth.currentUser;
-  if (!user || !currentSessionId) return;
-
-  const selected = [...document.querySelectorAll('.juz-check:checked')]
-    .map(c => Number(c.dataset.juz));
-
-  if (!selected.length) return;
-
-  const userSnap = await getDoc(doc(db, 'users', user.uid));
-  const pseudo = userSnap.data()?.pseudo || 'Utilisateur';
-
-  const success = [];
-  const refusedOther = [];
-
-  for (const num of selected) {
-    const ref = doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(num));
-    const snap = await getDoc(ref);
-    const data = snap.data();
-
-    if (data.status === 'free') {
-      await updateDoc(ref, {
-        status: 'assigned',
-        assignedTo: user.uid,
-        assignedPseudo: pseudo,
-        assignedAt: serverTimestamp()
-      });
-      success.push(num);
-    } else {
-      refusedOther.push(num);
-    }
-  }
-  const message = 'Juz Chosis :'
-  showJuzFeedback({
-    success,
-    refusedOther,
-    message
-  });
-};
-
-
-document.getElementById('finishJuzBtn').onclick = async () => {
-  const user = auth.currentUser;
-  if (!user || !currentSessionId) return;
-
-  const selected = [...document.querySelectorAll('.juz-check:checked')]
-    .map(c => Number(c.dataset.juz));
-
-  if (!selected.length) return;
-
-  const success = [];
-  const refusedFree = [];
-  const refusedOther = [];
-
-  for (const num of selected) {
-    const ref = doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(num));
-    const snap = await getDoc(ref);
-    const data = snap.data();
-
-    if (!data) continue;
-
-    if (data.status === 'assigned' && data.assignedTo === user.uid) {
-      await updateDoc(ref, {
-        status: 'finished',
-        finishedAt: serverTimestamp()
-      });
-      success.push(num);
-    } else if (data.status === 'free') {
-      refusedFree.push(num);
-    } else {
-      refusedOther.push(num);
-    }
-  }
-  const message = 'Juz terminés :'
-  showJuzFeedback({ success, refusedFree, refusedOther, message });
-};
-
+/*
 function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [], message }) {
   const box = document.getElementById('juzFeedback');
   box.className = 'juz-feedback';
@@ -1308,259 +1277,8 @@ function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [], me
 
   box.innerHTML = html;
 }
-
-/* ---------- UI: create session modal ---------- */
-/*
-function openCreateSessionModal() {
-
-  const modal = openModal(`
-  <div class="modal-card card" style="max-width:420px;width:100%">
-    <h3>Nouvelle Campagne de Lecture</h3>
-
-    <input id="ns_name" placeholder="Nom de la campagne" />
-    <label style="margin-top:8px;display:block">
-  Type de campagne :
-  <select id="ns_type">
-    <option value="coran">Lecture Coran</option>
-    <option value="zikr">Série de Zikr</option>
-  </select>
-</label>
-
-<div id="zikrFormulasCreate" style="display:none;margin-top:10px">
-  <h4>Formules de Zikr</h4>
-
-  <div class="zikr-formula">
-    <input placeholder="Nom formule" class="zf-name" />
-    <input type="number" placeholder="Objectif" class="zf-target" />
-  </div>
-
-  <button id="addFormulaBtn" class="btn small" style="margin-top:6px">
-    + Ajouter une formule
-  </button>
-</div>
-
-
-    <div style="display:flex;gap:8px;margin-top:6px">
-      <label style="flex:1">Début: <input id="ns_start" type="date" /></label>
-      <label style="flex:1">Fin: <input id="ns_end" type="date" /></label>
-    </div>
-
-    <div style="margin-top:8px">
-      
-      <div class="visibility-switch">
-      <label>Visibilité :</label>
-      <span id="labelPrivate">Privée</span>
-        <label class="switch">
-          <input type="checkbox" id="ns_public" checked>
-          <span class="slider"></span>
-        </label>
-        <span id="labelPublic">Publique</span>
-      </div>
-    </div>
-
-    <!-- Emails invités -->
-    <div id="invitedRow" style="margin-top:8px">
-      <label>Invités : 
-        <input id="ns_invited" placeholder="a@ex.com, b@ex.com" />
-      </label>
-    </div>
-
-    <!-- Générer un code -->
-    <div id="genCodeRow" style="margin-top:8px">
-      <label><input id="ns_gen_code" type="checkbox" /> Un code d'invitation sera généré</label>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button id="ns_create" class="btn btn-success">Démarrer</button>
-      <button id="ns_cancel" class="btn">Annuler</button>
-    </div>
-  </div>`);
-
-
-  document.body.appendChild(modal);
-
-
-  // ---- Logique d'affichage des options selon "Publique" ----
-  // Masquer/afficher la génération de code selon "Publique"
-
-
-  const publicCheckbox = document.getElementById("ns_public");
-  const invitedRow = document.getElementById("invitedRow");
-  const genCodeRow = document.getElementById("genCodeRow");
-  const genCodeCheckbox = document.getElementById("ns_gen_code");
-  const startDate = document.getElementById("ns_start");
-  const endDate = document.getElementById("ns_end");
-  const labelPrivate = document.getElementById("labelPrivate");
-  const labelPublic = document.getElementById("labelPublic");
-
-  const typeSelect = document.getElementById('ns_type');
-  const zikrBlock = document.getElementById('zikrFormulasCreate');
-  const addFormulaBtn = document.getElementById('addFormulaBtn');
-
-  typeSelect.addEventListener('change', () => {
-    zikrBlock.style.display =
-      typeSelect.value === 'zikr' ? 'block' : 'none';
-  });
-
-  // affichage initial (IMPORTANT)
-  zikrBlock.style.display =
-    typeSelect.value === 'zikr' ? 'block' : 'none';
-
-  addFormulaBtn.addEventListener('click', () => {
-    const row = document.createElement('div');
-    row.className = 'zikr-formula';
-    row.style.display = 'flex';
-    row.style.gap = '6px';
-    row.style.marginTop = '6px';
-
-    row.innerHTML = `
-    <input placeholder="Nom formule" class="zf-name" />
-    <input type="number" placeholder="Objectif" class="zf-target" />
-  `;
-
-    zikrBlock.insertBefore(row, addFormulaBtn);
-  });
-
-
-
-
-  // ---- Fermeture avec bouton Annuler ----
-
-  modal.querySelector('#ns_cancel').onclick = () => closeModal(modal);
-
-  // ---- Fermeture en cliquant sur le fond (même comportement que invite popup) ----
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      document.body.removeChild(modal);
-    }
-  });
-
-  // ----------- Dates MIN -----------
-
-  // Date du jour au format AAAA-MM-JJ
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-
-  // Interdire dates passées
-  startDate.min = todayStr;
-  endDate.min = todayStr;
-
-  // ----------- Contrôle de visibilité -----------
-
-  function updateVisibility() {
-    if (publicCheckbox.checked) {
-      // Publique
-      invitedRow.style.display = "none";
-      genCodeRow.style.display = "none";
-      genCodeCheckbox.checked = false;
-      genCodeCheckbox.disabled = true;
-      labelPrivate.style.display = "none";
-      labelPublic.style.display = "block";
-    } else {
-      // Privée
-      invitedRow.style.display = "block";
-      genCodeRow.style.display = "block";
-      genCodeCheckbox.checked = true;   // obligatoire
-      genCodeCheckbox.disabled = true;  // bloqué
-      labelPrivate.style.display = "block";
-      labelPublic.style.display = "none";
-    }
-  }
-  updateVisibility();
-
-  publicCheckbox.addEventListener("change", updateVisibility);
-
-
-  // ----------- Validation Dates -----------
-
-  startDate.addEventListener("change", () => {
-    if (startDate.value) {
-      // Fin ne peut pas être avant début
-      endDate.min = startDate.value;
-
-      // Si fin choisie trop tôt → reset
-      if (endDate.value && endDate.value < startDate.value) {
-        endDate.value = "";
-      }
-    }
-  });
-
-  endDate.addEventListener("change", () => {
-    if (endDate.value && startDate.value && endDate.value < startDate.value) {
-      alert("La date de fin ne peut pas être antérieure à la date de début.");
-      endDate.value = "";
-    }
-  });
-
-  // ---- Création de la campagne ----
-
-  modal.querySelector('#ns_create').onclick = async () => {
-    const name = document.getElementById('ns_name').value.trim();
-    const typeCampagne = document.getElementById('ns_type').value;
-    const start = startDate.value || null;
-    const end = endDate.value || null;
-    const isPublic = publicCheckbox.checked;
-    const invited = parseCSVemails(document.getElementById('ns_invited').value);
-    const genCode = genCodeCheckbox.checked;
-
-    if (!name) return showModalFeedback('Donnez un nom à la campagne');
-
-    let formules = [];
-
-    if (typeCampagne === 'zikr') {
-      document.querySelectorAll('.zikr-formula').forEach(row => {
-        const fname = row.querySelector('.zf-name').value.trim();
-        const target = Number(row.querySelector('.zf-target').value);
-
-        if (fname && Number.isFinite(target) && target > 0) {
-          formules.push({
-            name: fname,
-            objectif: target
-          });
-        }
-      });
-
-      if (!formules.length) {
-        return showModalFeedback('Ajoutez au moins une formule de Zikr avec un objectif valide');
-      }
-    }
-
-    /*
-    const inviteCode = genCode
-      ? Math.random().toString(36).slice(2, 8).toUpperCase()
-      : null;*/
-/*
-    const inviteCode = !isPublic
-      ? Math.random().toString(36).slice(2, 8).toUpperCase()
-      : null;
-    try {
-      const sessionId = await createSession({
-        name,
-        typeCampagne,
-        startDate: start,
-        endDate: end,
-        isPublic,
-        invitedEmails: invited,
-        inviteCode,
-        formules
-      });
-
-      document.body.removeChild(modal);
-      await loadSessions();
-      await openSession(sessionId);
-
-    } catch (e) {
-      console.error(e);
-      showModalFeedback(e.message);
-    }
-  };
-
-
-}
 */
+/* ---------- UI: create session modal ---------- */
 function openCreateSessionModal() {
   const modal = openModal(`
     <div class="modal-card card" style="max-width:420px;width:100%">
@@ -1600,7 +1318,7 @@ function openCreateSessionModal() {
         <label>Visibilité :</label>
         <span id="labelPrivate">Privée</span>
           <label class="switch">
-            <input type="checkbox" id="ns_public" checked>
+            <input type="checkbox" id="ns_public">
             <span class="slider"></span>
           </label>
           <span id="labelPublic">Publique</span>
@@ -1609,14 +1327,13 @@ function openCreateSessionModal() {
   
       <!-- Emails invités -->
       <div id="invitedRow" style="margin-top:8px">
-        <label>Invités : 
-          <input id="ns_invited" placeholder="a@ex.com, b@ex.com" />
+        <label><input id="ns_invited" placeholder="Invités: mame@ex.com, astou@ex.com" />
         </label>
       </div>
   
       <!-- Générer un code -->
       <div id="genCodeRow" style="margin-top:8px">
-        <label><input id="ns_gen_code" type="checkbox" /> Un code d'invitation sera généré</label>
+        <label> Un code d'invitation sera généré</label>
       </div>
   
       <div style="display:flex;gap:8px;margin-top:12px">
@@ -1629,9 +1346,23 @@ function openCreateSessionModal() {
   const startDate = modal.querySelector("#ns_start");
   const endDate = modal.querySelector("#ns_end");
   const publicCheckbox = modal.querySelector("#ns_public");
-  const genCodeCheckbox = modal.querySelector("#ns_gen_code");
   const invitedInput = modal.querySelector("#ns_invited");
 
+  // État initial : privé
+  invitedInput.disabled = false;
+
+  publicCheckbox.addEventListener("change", () => {
+    const isPublic = publicCheckbox.checked;
+
+    // Si public → pas d’invités manuels
+    invitedInput.disabled = isPublic;
+    // Nettoyage si on repasse en public
+    if (isPublic) {
+      invitedInput.value = "";
+    }
+  });
+
+  
   // ----- Bouton CRÉER -----
   modal.querySelector('#ns_create').onclick = async () => {
     try {
@@ -1639,7 +1370,7 @@ function openCreateSessionModal() {
       const typeCampagne = modal.querySelector('#ns_type').value;
 
       if (!name) {
-        showModalFeedback('Donnez un nom à la campagne');
+        showModalFeedback('Donnez un nom à la campagne', 'error');
         return;
       }
 
@@ -1656,7 +1387,7 @@ function openCreateSessionModal() {
         });
 
         if (!formules.length) {
-          showModalFeedback('Ajoutez au moins une formule de Zikr valide');
+          showModalFeedback('Ajoutez au moins une formule de Zikr valide', "error");
           return;
         }
       }
@@ -1666,38 +1397,96 @@ function openCreateSessionModal() {
         ? Math.random().toString(36).slice(2, 8).toUpperCase()
         : null;
 
+
+      const start = startDate.value;
+      const end = endDate.value;
+
+      const today = new Date().toISOString().split("T")[0];
+
+      startDate.min = today;
+      endDate.min = today;
+
+
+      if (!start || !end) {
+        showModalFeedback(
+          "Veuillez renseigner les dates de début et de fin",
+          "error"
+        );
+        return;
+      }
+
+      startDate.addEventListener("change", () => {
+        endDate.min = startDate.value;
+      
+        if (endDate.value && endDate.value < startDate.value) {
+          endDate.value = startDate.value;
+        }
+      });
+      
+      const todayDate = new Date(today);
+
+      if (new Date(start) < todayDate || new Date(end) < todayDate) {
+        showModalFeedback(
+          "Les dates ne peuvent pas être antérieures à aujourd’hui",
+          "error"
+        );
+        return;
+      }
+
+      if (new Date(end) < new Date(start)) {
+        showModalFeedback(
+          "La date de fin doit être postérieure à la date de début",
+          "error"
+        );
+        return;
+      }
+      
+      startDate.addEventListener("keydown", e => e.preventDefault());
+      endDate.addEventListener("keydown", e => e.preventDefault());
+
       const sessionId = await createSession({
         name,
         typeCampagne,
-        startDate: startDate.value || null,
-        endDate: endDate.value || null,
+        startDate: startvalue || null,
+        endDate: end.value || null,
         isPublic,
         invitedEmails: parseCSVemails(invitedInput.value),
         inviteCode,
         formules
       });
-      
+
       closeModal(modal);
       await loadSessions();
 
       const session = allVisibleSessions.find(s => s.id === sessionId);
 
       if (!session) {
-        showModalFeedback("Session introuvable après création");
+        showModalFeedback("Session introuvable après création", "error");
         return;
       }
 
       await openSession(session);
 
+      // 🔔 Feedback APRÈS ouverture (UX parfaite)
+      if (inviteCode) {
+        showModalFeedback(
+          `🎟️ Code d’invitation : ${inviteCode}\n` +
+          `Partagez-le aux personnes à inviter.`,
+          "info",
+          5000 // plus long
+        );
+      }
+
     } catch (e) {
-      console.error(e);
-      showModalFeedback(e.message);
+      showModalFeedback(e.message, "sytem");
     }
   };
 
   // ----- Annuler -----
   modal.querySelector('#ns_cancel').onclick = () => closeModal(modal);
 }
+
+
 
 function showCoranCampaign(session) {
   el.grid.classList.remove('hidden');
@@ -1880,30 +1669,44 @@ async function renderZikrFormulas(formules, sessionId) {
     <!-- Tableau sans bordure -->
     <table class="zikr-table zikr-totals-table">
       <tr>
-        <td class="label">Total choisi</td>
+        <td class="label">Déjà choisi</td>
         <td class="value"><strong>${current}</strong></td>
       </tr>
       <tr>
-        <td class="label">Total terminé</td>
+        <td class="label">Déjà terminé</td>
         <td class="value"><strong>${finished}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Reste à choisir</td>
+        <td class="value"><strong>${reste}</strong></td>
       </tr>
 
       <!-- Input pleine largeur -->
-      <tr>
-        <td colspan="2">
-          <div class="zikr-input-wrapper" data-reste="${reste}">
-            <input
-              type="number"
-              min="1"
-              max="${reste}"
-              placeholder="choix"
-              class="zikr-input"
-              data-formule-id="${f.id}"
-              ${reste === 0 ? 'disabled' : ''}
-            />
-          </div>
-        </td>
-      </tr>
+<tr>
+  <td colspan="2">
+    <div class="zikr-input-wrapper">
+      <input
+        type="number"
+        min="1"
+        max="${reste}"
+        placeholder="Choix"
+        class="zikr-input"
+        data-formule-id="${f.id}"
+        ${reste === 0 ? 'disabled' : ''}
+      />
+
+      <button
+        class="zikr-validate-btn"
+        ${reste === 0 ? 'disabled' : ''}
+      >
+        Valider
+      </button>
+    </div>
+  </td>
+</tr>
+
+
+
     </table>
 
 
@@ -1911,6 +1714,27 @@ async function renderZikrFormulas(formules, sessionId) {
   </div>
 </div>
 `;
+
+
+
+
+    const input = card.querySelector('.zikr-input');
+    const validateBtn = card.querySelector('.zikr-validate-btn');
+
+    validateBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+
+      const value = Number(input.value);
+      if (!value || value <= 0) return;
+
+      await validateZikrFormula(
+        currentSessionId,
+        f.id,
+        card
+      );
+
+      input.value = '';
+    });
 
     card.querySelectorAll('.contrib-btn.finish')
       .forEach(btn => {
@@ -1922,7 +1746,7 @@ async function renderZikrFormulas(formules, sessionId) {
 
           // sécurité : seul l'utilisateur courant peut terminer
           if (uid !== auth.currentUser.uid) {
-            showZikrFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
+            showModalFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
             return;
           }
 
@@ -1968,7 +1792,7 @@ async function finishZikrContribution(sessionId, formulaId, card) {
 
   const snap = await getDoc(contribRef);
   if (!snap.exists()) {
-    showZikrFeedback("❌ Aucune contribution trouvée", "error");
+    showModalFeedback("❌ Aucune contribution trouvée", "error");
     return;
   }
 
@@ -1977,7 +1801,7 @@ async function finishZikrContribution(sessionId, formulaId, card) {
   const alreadyFinished = Number(data.finished || 0);
 
   if (alreadyFinished >= value) {
-    showZikrFeedback("✅ Contribution déjà terminée");
+    showModalFeedback("✅ Contribution déjà terminée");
     return;
   }
 
@@ -2003,7 +1827,7 @@ async function finishZikrContribution(sessionId, formulaId, card) {
     finished: increment(toFinish)
   });
 
-  showZikrFeedback("🎉 Contribution marquée comme terminée");
+  showModalFeedback("🎉 Contribution marquée comme terminée", "success");
 
   // UX locale
   updateLocalFinishedUI(card, toFinish);
@@ -2051,7 +1875,7 @@ document.querySelectorAll('.auth-tab').forEach(tab => {
 });
 
 
-
+/*
 document.getElementById('validateZikrChoices').addEventListener('click', async () => {
 
   const cards = document.querySelectorAll('.zikr-card');
@@ -2073,6 +1897,7 @@ document.getElementById('validateZikrChoices').addEventListener('click', async (
     updateLocalContributorUI(card, value);
   }
 });
+*/
 
 //FIN
 
@@ -2086,7 +1911,7 @@ async function validateZikrFormula(sessionId, formulaId, card) {
   const value = Number(input.value);
 
   if (!value || value <= 0) {
-    showZikrFeedback("❌ Entrez un nombre valide", "error");
+    showModalFeedback("❌ Entrez un nombre valide", "error");
     return;
   }
 
@@ -2109,14 +1934,14 @@ async function validateZikrFormula(sessionId, formulaId, card) {
 
   // 🛑 FORMULE DÉJÀ TERMINÉE
   if (reste <= 0) {
-    showZikrFeedback("✅ Objectif déjà atteint", "error");
+    showModalFeedback("✅ Objectif déjà atteint", "error");
     input.value = '';
     return;
   }
 
   // 🛑 CONTRIBUTION TROP GRANDE
   if (value > reste) {
-    showZikrFeedback(
+    showModalFeedback(
       `❌ Vous ne pouvez pas dépasser le reste (${reste})`, "error"
     );
     return;
@@ -2159,47 +1984,56 @@ async function validateZikrFormula(sessionId, formulaId, card) {
   );
 
   input.value = '';
-  showZikrFeedback(
+  showModalFeedback(
     newReste === 0
-      ? '🎉 Objectif atteint, barakAllahu fik'
+      ? '🎉 Objectif atteint,'
       : '✅ Contribution enregistrée'
-  );
+  ,"success");
 }
 
-function showModalFeedback(message, duration = 2500) {
-  // Supprime l'ancien feedback si existant
+function showModalFeedback(
+  message,
+  type = "info",
+  duration = 2500
+) {
+  // Supprime l'ancien feedback
   const old = document.querySelector('.modal-feedback');
   if (old) old.remove();
 
-  // Crée le feedback
+  // Types autorisés
+  const types = {
+    success: { class: "success", icon: "✔️" },
+    error: { class: "error", icon: "❌" },
+    system: { class: "system", icon: "⚠️" },
+    info: { class: "info", icon: "ℹ️" }
+  };
+
+  const conf = types[type] || types.info;
+
+  // Création
   const feedback = document.createElement('div');
-  feedback.className = 'modal-feedback';
-  feedback.textContent = message;
+  feedback.className = `modal-feedback ${conf.class}`;
+  feedback.innerHTML = `
+    <span class="icon">${conf.icon}</span>
+    <span class="message">${message}</span>
+  `;
 
   document.body.appendChild(feedback);
 
-  // Force le rendu pour déclencher l'animation
+  // Animation entrée
   requestAnimationFrame(() => {
     feedback.classList.add('show');
   });
 
-  // Supprime après duration
+  // Sortie
   setTimeout(() => {
     feedback.classList.remove('show');
-    feedback.addEventListener('transitionend', () => feedback.remove(), { once: true });
+    feedback.addEventListener(
+      'transitionend',
+      () => feedback.remove(),
+      { once: true }
+    );
   }, duration);
-}
-
-
-
-function showZikrFeedback(msg, type = 'success') {
-  el.zikrFeedback.textContent = msg;
-  el.zikrFeedback.className = `zikr-feedback ${type}`;
-
-  setTimeout(() => {
-    el.zikrFeedback.textContent = '';
-    el.zikrFeedback.className = 'zikr-feedback';
-  }, 3000);
 }
 
 function openModal(html) {
@@ -2413,14 +2247,14 @@ function refreshGrid() {
 
 
 const scrollTopBtn = document.getElementById('scrollTopBtn');
-const scrollDownBtn = document.getElementById('scrollDownBtn');
+//const scrollDownBtn = document.getElementById('scrollDownBtn');
 
 window.addEventListener('scroll', () => {
   const y = window.scrollY;
   const max = document.body.scrollHeight - window.innerHeight;
 
   // bouton haut → visible si on n'est pas déjà en bas
-  scrollDownBtn.style.display = y < max - 100 ? 'flex' : 'none';
+  // scrollDownBtn.style.display = y < max - 100 ? 'flex' : 'none';
 
   // bouton bas → visible si on a scrollé
   scrollTopBtn.style.display = y > 100 ? 'flex' : 'none';
@@ -2432,9 +2266,9 @@ scrollTopBtn.addEventListener('click', () => {
 });
 
 // ⬇️ descendre
-scrollDownBtn.addEventListener('click', () => {
+/*scrollDownBtn.addEventListener('click', () => {
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-});
+});*/
 
 
 

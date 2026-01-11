@@ -136,6 +136,11 @@
 
 
       <div id="sessionView" class="card" hidden>
+        <button id="backToSessionsBtn" class="back-btn">
+          <i class="fa-solid fa-arrow-left"></i>
+          Campagnes
+        </button>
+        
         <h3 id="sessionTitle">Lecture</h3>
         <div class="session-actions">
           <button
@@ -160,7 +165,7 @@
               Modifier la campagne
             </button>
         
-            <button class="menu-item danger" id="menuClose" role="menuitem">
+            <button class="menu-item danger" id="closeSessionBtn" role="menuitem">
               <i class="fa-solid fa-lock"></i>
               Clôturer la campagne
             </button>
@@ -174,9 +179,9 @@
         
         <div id="sessionMeta"></div>
         <div id="stats" class="stats">Terminés : 0/30</div>
-        <div style="margin-top:12px;">
+       <!-- <div style="margin-top:12px;">
           <button id="closeSessionBtn" class="btn btn-danger" style="display:none">Clôturer la campagne</button>
-        </div>
+        </div>-->
         <!-- Onglets -->
         <div class="session-tabs">
           <button id="tabJuz" class="tab-btn">Juz</button>
@@ -185,29 +190,6 @@
         </div>
 
 
-
-        <!-- Barre de sélection -->
-        <div id="juzSelectionBar" class="juz-selection-bar hidden">
-
-          <label class="juz-checkbox">
-            <input type="checkbox" id="checkAllJuz" />
-            Tout
-          </label>
-
-          <span id="selectedJuzLabel">Sélection Juz :</span>
-
-          <div id="bulkActions" class="bulk-actions">
-            <button id="validateJuzBtn" class="btn btn-primary">
-              Valider choix
-            </button>
-            <button id="finishJuzBtn" class="btn btn-success">
-              Marquer terminé
-            </button>
-          </div>
-          <div id="juzFeedback" class="juz-feedback"></div>
-
-        </div>
-
         <div id="grid" class="card"></div>
 
         <!-- ====== ZIKR VIEW ====== -->
@@ -215,10 +197,6 @@
 
           <!--<div id="zikrMeta"></div>-->
           <div id="zikrFeedback" class="zikr-feedback"></div>
-
-          <button id="validateZikrChoices" class="btn btn-success">
-            Valider les choix
-          </button>
 
           <div id="zikrFormulas" class="grid">
             <!-- formules injectées en JS -->
@@ -274,14 +252,14 @@
 
 
 
-<!-- Scroll Down (en haut → aller en bas) -->
+<!-- Scroll Down (en haut → aller en bas)
 <button
   id="scrollDownBtn"
   class="scroll-btn scroll-btn-top"
   aria-label="Descendre"
 >
   <i class="fas fa-chevron-down"></i>
-</button>
+</button>  -->
 
 <!-- Scroll Up (en bas → aller en haut) -->
 <button
