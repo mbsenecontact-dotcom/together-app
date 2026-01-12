@@ -2006,3 +2006,122 @@ textarea::placeholder {
 .back-btn:hover {
   text-decoration: underline;
 }
+
+
+
+/* ====== ZIKR CONTRIBUTORS – MOBILE FRIENDLY ====== */
+
+@media (max-width: 640px) {
+
+  .zikr-contribs-table,
+  .zikr-contribs-table tbody,
+  .zikr-contribs-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .zikr-contributor {
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .zikr-contributor td {
+    display: block;
+    width: 100%;
+    border: none;
+    padding: 4px 0;
+  }
+
+  .contrib-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .contrib-stats {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .contrib-stats .stat {
+    margin-bottom: 2px;
+  }
+
+  .contrib-stats .success {
+    color: #2ecc71;
+  }
+
+  .contrib-stats .warning {
+    color: #f39c12;
+  }
+
+  .contrib-actions {
+    margin-top: 10px;
+    text-align: right;
+  }
+
+  .contrib-btn.finish {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+}
+
+
+.contrib-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.stat {
+  line-height: 1.3;
+}
+
+.stat.success {
+  color: #27ae60;
+}
+
+.stat.warning {
+  color: #f39c12;
+}
+
+.juz-contrib-card {
+  padding: 10px 0;
+}
+
+.contrib-header {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.juz-info {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.juz-info .row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.juz-info .label {
+  opacity: 0.7;
+}
+
+.juz-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.juz-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}

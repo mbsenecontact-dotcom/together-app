@@ -24,17 +24,24 @@
     </div>
 
     <!-- Barre de navigation en haut à droite de l'écran class="header-right" : style.css -->
-    <!--<nav class="header-right">
-      <button id="menuLogout" class="btn btn-danger" style="display:none">Déconnexion</button>
-      <div id="menuUserAvatar" class="avatar-sm"><img src="default.jpg" alt="Avatar utilisateur" class="avatar" /></div>
-    </nav>-->
 
     <nav class="header-right">
       <select id="languageSelect" class="lang-select">
         <option value="fr" data-flag="🇫🇷">🇫🇷 Français</option>
+
+        <!-- Wolof → Sénégal -->
         <option value="wo" data-flag="🇸🇳">🇸🇳 Wolof</option>
+        
         <option value="en" data-flag="🇬🇧">🇬🇧 Anglais</option>
-        <option value="ar" data-flag="🇦🇪">🇦🇪 Arabe</option>
+        
+        <!-- Arabe → Arabie Saoudite -->
+        <option value="ar" data-flag="🇸🇦">🇸🇦 Arabe</option>
+        
+        <!-- Nouvelles langues -->
+        <option value="es" data-flag="🇪🇸">🇪🇸 Espagnol</option>
+        <option value="pt" data-flag="🇵🇹">🇵🇹 Portugais</option>
+        <option value="de" data-flag="🇩🇪">🇩🇪 Allemand</option>
+        
       </select>
     
       <div id="menuUserAvatar" class="avatar-sm">
@@ -52,21 +59,7 @@
         <button id="homeConnectBtn" class="btn btn-primary" aria-haspopup="true">Se connecter</button>
       </div>
     </section>
-<!--
-    <section id="authPage" class="page" hidden>
-      <div id="emailAuth" class="card">
-        <h3>Connexion Email</h3>
-        <input id="emailInput" type="email" placeholder="Adresse email" />
-        <input id="passwordInput" type="password" placeholder="Mot de passe" />
-        <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
-        <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
-        <button id="emailSignupBtn" class="btn btn-primary">Créer un compte</button>
-        <p class="center">Ou</p>
-        <button id="googleLogin" class="btn btn-google">Connexion avec Google</button>
-        <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
-      </div>
-    </section>
-  -->
+
 
   <section id="authPage" class="page card" hidden>
     <div class="auth-tabs">
@@ -81,7 +74,6 @@
         <input id="emailInput" type="email" placeholder="Adresse email" />
         <input id="passwordInput" type="password" placeholder="Mot de passe" />
         <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
-        <!--<button id="googleLogin" class="btn btn-google">Connexion avec Google</button>-->
         <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
         <!-- Feedback ici -->
         <div id="loginFeedback" class="auth-feedback"></div>
@@ -198,48 +190,27 @@
           <!--<div id="zikrMeta"></div>-->
           <div id="zikrFeedback" class="zikr-feedback"></div>
 
-          <div id="zikrFormulas" class="grid">
-            <!-- formules injectées en JS -->
-          </div>
-
+          <div id="zikrFormulas" class="grid"></div>
 
         </div>
 
 
 
-
-<!--
         <div id="discussionSection" class="card hidden">
-
           <h4>Discussion de la campagne</h4>
-
+        
           <div id="messagesList" class="messages"></div>
-
-          <div id="messageForm">
-            <input id="messageInput" placeholder="Écrire un message…" maxlength="500" />
-            <button id="sendMessageBtn" class="btn btn-primary">
-              Envoyer
+        
+          <!-- Formulaire de message -->
+          <div id="messageForm" class="message-form">
+            <input id="messageInput" class="zikr-input" placeholder="Écrire un message…" maxlength="500" />
+            <button id="sendMessageBtn" class="btn btn-icon">
+              <!-- Icône Telegram -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon">
+                <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+              </svg>
             </button>
           </div>
-        </div>-->
-
-
-        <div id="discussionSection" class="card hidden">
-          <h4>Discussion de la campagne</h4>
-        
-          <div id="messagesList" class="messages"></div>
-        
-<!-- Formulaire de message -->
-<div id="messageForm" class="message-form">
-  <input id="messageInput" class="zikr-input" placeholder="Écrire un message…" maxlength="500" />
-  <button id="sendMessageBtn" class="btn btn-icon">
-    <!-- Icône Telegram -->
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon">
-      <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
-    </svg>
-  </button>
-</div>
-
           
         </div>
         
@@ -249,19 +220,6 @@
 
   </main>
 
-
-
-
-<!-- Scroll Down (en haut → aller en bas)
-<button
-  id="scrollDownBtn"
-  class="scroll-btn scroll-btn-top"
-  aria-label="Descendre"
->
-  <i class="fas fa-chevron-down"></i>
-</button>  -->
-
-<!-- Scroll Up (en bas → aller en haut) -->
 <button
   id="scrollTopBtn"
   class="scroll-btn scroll-btn-bottom"

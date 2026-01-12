@@ -67,19 +67,6 @@ const juzSelectionBar = document.getElementById('juzSelectionBar'); // si tu veu
 const sessionView = document.getElementById('sessionView');
 
 
-/*
-const googleProvider = new GoogleAuthProvider();
-
-el.googleLogin.addEventListener('click', async () => {
-  try {
-    // 1️⃣ Tentative popup (desktop + mobile récents)
-    await signInWithPopup(auth, googleProvider);
-  } catch (err) {
-    // 2️⃣ Popup bloquée → fallback redirect (mobile / WebView)
-    console.warn('Popup bloquée, fallback redirect', err);
-    await signInWithRedirect(auth, googleProvider);
-  }
-});*/
 
 
 
@@ -241,6 +228,28 @@ tabZikr.onclick = () => {
 
 /* ---------- Helpers ---------- */
 
+function shareSessionInvite(meta) {
+  const subject = `Invitation – ${meta.name}`;
+  const text = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
+
+  // ✅ Partage natif (mobile + certains desktop modernes)
+  if (navigator.share) {
+    navigator.share({
+      title: subject,
+      text
+    }).catch(err => {
+      // utilisateur a annulé → silence
+      console.log("Partage annulé", err);
+    });
+    return;
+  }
+
+  // 💻 Fallback universel desktop → email
+  const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+  window.location.href = mailto;
+}
+
+
 function showSessionsPage() {
   document.getElementById('sessionsList').hidden = false;
   document.getElementById('sessionView').hidden = true;
@@ -281,14 +290,6 @@ function parseCSVemails(text) {
 
 /* ---------- Auth handlers (email+google) ---------- */
 
-// Fonction utilitaire pour afficher feedback
-function showAuthFeedback(type, message, panel = 'login') {
-  const container = document.getElementById(
-    panel === 'login' ? 'loginFeedback' : 'signupFeedback'
-  );
-  container.textContent = message;
-  container.className = 'auth-feedback ' + (type === 'error' ? 'error' : 'success');
-}
 
 // Google
 
@@ -304,7 +305,7 @@ el.emailSignupBtn?.addEventListener('click', async () => {
   const pseudo = el.pseudoInput.value.trim();
 
   if (!email || !password || !pseudo) {
-    return showAuthFeedback('error', 'Remplissez tous les champs', 'signup');
+    return showModalFeedback('Remplissez tous les champs', 'error');
   }
 
   try {
@@ -312,11 +313,14 @@ el.emailSignupBtn?.addEventListener('click', async () => {
     await updateProfile(cred.user, { displayName: pseudo });
     await sendEmailVerification(cred.user);
 
-    showAuthFeedback('success', 'Compte créé. Vérifiez votre email avant connexion.', 'signup');
+    showModalFeedback('Compte créé. Vérifiez votre email avant connexion.', 'success');
     //showPage('home');
   } catch (e) {
-    console.error(e);
-    showAuthFeedback('error', e.message, 'signup');
+    console.error(e.message);
+    if (e.message == 'Firebase: Error (auth/invalid-credential).')
+      showModalFeedback('Mot de passe incorrect', 'error');
+    if (e.message == 'Firebase: Error (auth/invalid-email).')
+      showModalFeedback('Email incorrect', 'error');
   }
 });
 
@@ -326,23 +330,25 @@ el.emailLoginBtn?.addEventListener('click', async () => {
   const password = el.passwordInput.value.trim();
 
   if (!email || !password) {
-    return showAuthFeedback('error', 'Remplissez tous les champs', 'login');
+    return showModalFeedback('Remplissez tous les champs', 'error');
   }
 
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
 
     if (cred.user.providerData.some(p => p.providerId === 'password') && !cred.user.emailVerified) {
-      showAuthFeedback('error', 'Vérifiez votre email avant connexion.', 'login');
+      showModalFeedback('Vérifiez votre email avant connexion.', 'error');
       await signOut(auth);
       return;
     }
 
-    showAuthFeedback('success', 'Connexion réussie !', 'login');
+    showModalFeedback('Connexion réussie !', 'success');
     //showPage('home');
   } catch (e) {
-    console.error(e);
-    showAuthFeedback('error', e.message, 'login');
+    if (e.message == 'Firebase: Error (auth/invalid-credential).')
+      showModalFeedback('Mot de passe incorrect', 'error');
+    if (e.message == 'Firebase: Error (auth/invalid-email).')
+      showModalFeedback('Email incorrect', 'error');
   }
 });
 
@@ -352,15 +358,15 @@ el.forgotPassword?.addEventListener('click', async (ev) => {
   const email = el.emailInput.value.trim();
 
   if (!email) {
-    return showAuthFeedback('error', 'Entrez votre email pour réinitialiser', 'login');
+    return showModalFeedback('Entrez votre email pour réinitialiser', 'error');
   }
 
   try {
     await sendPasswordResetEmail(auth, email);
-    showAuthFeedback('success', 'Email de réinitialisation envoyé', 'login');
+    showModalFeedback('Email de réinitialisation envoyé', 'success');
   } catch (e) {
     console.error(e);
-    showAuthFeedback('error', e.message, 'login');
+    showModalFeedback(e.message, 'error');
   }
 });
 
@@ -687,64 +693,50 @@ async function openSession(session) {
     `${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}`;
 
 
-  /*
-  
-    el.sessionMeta.innerHTML = `
-    <div><strong>Période :</strong> ${meta.startDate || ''} → ${meta.endDate || ''}</div>
-    <div><strong>Visibilité :</strong> ${meta.isPublic ? 'Publique' : 'Privée'}</div>
-    <div><strong>Statut :</strong> ${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}</div>
-  
-    ${isAdmin && hasInviteCode ? `
-      <div id="showCodeInvitation" class="invite-code-box">
-        <div class="invite-label">Code invitation</div>
-        <div class="invite-code">${meta.inviteCode}</div>
-  
-        <div class="invite-actions">
-          <button class="share-btn icon-only" id="shareBtn" title="Partager">
-    <i class="fa-solid fa-share-nodes"></i>
-  </button>
-  
-        </div>
-  
-        
-      </div>
-    ` : ``}
-  `;
-  */
 
   const menuShare = document.getElementById('menuShare');
   const inviteCodeValue = document.getElementById('inviteCodeValue');
 
+
+  /*
+    if (isAdmin && hasInviteCode) {
+      inviteCodeValue.textContent = 'Partager code : ' + meta.inviteCode;
+      menuShare.style.display = 'flex';
+      const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
+  
+      document.getElementById("shareBtn")?.addEventListener("click", async () => {
+        if (navigator.share) {
+          // 📱 Mobile : partage natif
+          try {
+            await navigator.share({
+              title: `Invitation – ${meta.name}`,
+              text: inviteText
+            });
+          } catch (err) {
+            console.log("Partage annulé", err);
+          }
+        } else {
+          // 💻 Fallback desktop (copie ou WhatsApp)
+          const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
+          window.open(url, "_blank");
+        }
+      });
+    } else {
+      menuShare.style.display = 'none';
+    }*/
+
   if (isAdmin && hasInviteCode) {
-    inviteCodeValue.textContent = 'Partager code : ' + meta.inviteCode;
+    inviteCodeValue.textContent = `Partager : ${meta.inviteCode}`;
     menuShare.style.display = 'flex';
+
+    menuShare.onclick = (e) => {
+      e.stopPropagation();
+      shareSessionInvite(meta);
+    };
   } else {
     menuShare.style.display = 'none';
   }
 
-
-
-  if (isAdmin && hasInviteCode) {
-    const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
-
-    document.getElementById("shareBtn")?.addEventListener("click", async () => {
-      if (navigator.share) {
-        // 📱 Mobile : partage natif
-        try {
-          await navigator.share({
-            title: `Invitation – ${meta.name}`,
-            text: inviteText
-          });
-        } catch (err) {
-          console.log("Partage annulé", err);
-        }
-      } else {
-        // 💻 Fallback desktop (copie ou WhatsApp)
-        const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
-        window.open(url, "_blank");
-      }
-    });
-  }
 
   // Afficher ou cacher bouton Clôturer selon statut
   //closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
@@ -917,153 +909,153 @@ async function userCanAccessDiscussion(session) {
 const juzDetails = {
   1: {
     description: "Introduction du Coran, fondements de la foi et appel à l’adoration sincère.",
-    debut: "S. n°1 / V. n°1",
-    fin: "S. n°2 / V. n°141"
+    debut: "S. 1 / V. 1",
+    fin: "S. 2 / V. 141"
   },
   2: {
     description: "Lois religieuses et identité de la communauté musulmane.",
-    debut: "S. n°2 / V. n°142",
-    fin: "S. n°2 / V. n°252"
+    debut: "S. 2 / V. 142",
+    fin: "S. 2 / V. 252"
   },
   3: {
     description: "Relations intercommunautaires et histoire des prophètes.",
-    debut: "S. n°2 / V. n°253",
-    fin: "S. n°3 / V. n°92"
+    debut: "S. 2 / V. 253",
+    fin: "S. 3 / V. 92"
   },
   4: {
     description: "Justice sociale, droits des femmes et organisation familiale.",
-    debut: "S. n°3 / V. n°93",
-    fin: "S. n°4 / V. n°23"
+    debut: "S. 3 / V. 93",
+    fin: "S. 4 / V. 23"
   },
   5: {
     description: "Lois familiales, héritage et protection des plus vulnérables.",
-    debut: "S. n°4 / V. n°24",
-    fin: "S. n°4 / V. n°147"
+    debut: "S. 4 / V. 24",
+    fin: "S. 4 / V. 147"
   },
   6: {
     description: "Responsabilité morale, obéissance divine et alliances.",
-    debut: "S. n°4 / V. n°148",
-    fin: "S. n°5 / V. n°81"
+    debut: "S. 4 / V. 148",
+    fin: "S. 5 / V. 81"
   },
   7: {
     description: "Fidélité aux engagements et récits des communautés passées.",
-    debut: "S. n°5 / V. n°82",
-    fin: "S. n°6 / V. n°110"
+    debut: "S. 5 / V. 82",
+    fin: "S. 6 / V. 110"
   },
   8: {
     description: "Unicité de Dieu et rejet de l’idolâtrie.",
-    debut: "S. n°6 / V. n°111",
-    fin: "S. n°7 / V. n°87"
+    debut: "S. 6 / V. 111",
+    fin: "S. 7 / V. 87"
   },
   9: {
     description: "Récits des peuples anciens et avertissements divins.",
-    debut: "S. n°7 / V. n°88",
-    fin: "S. n°8 / V. n°40"
+    debut: "S. 7 / V. 88",
+    fin: "S. 8 / V. 40"
   },
   10: {
     description: "Confiance en Dieu et constance face aux épreuves.",
-    debut: "S. n°8 / V. n°41",
-    fin: "S. n°9 / V. n°92"
+    debut: "S. 8 / V. 41",
+    fin: "S. 9 / V. 92"
   },
   11: {
     description: "Sincérité, repentir et justice divine.",
-    debut: "S. n°9 / V. n°93",
-    fin: "S. n°11 / V. n°5"
+    debut: "S. 9 / V. 93",
+    fin: "S. 11 / V. 5"
   },
   12: {
     description: "Histoires prophétiques et leçon de patience.",
-    debut: "S. n°11 / V. n°6",
-    fin: "S. n°12 / V. n°52"
+    debut: "S. 11 / V. 6",
+    fin: "S. 12 / V. 52"
   },
   13: {
     description: "Foi, persévérance et victoire de la vérité.",
-    debut: "S. n°12 / V. n°53",
-    fin: "S. n°14 / V. n°52"
+    debut: "S. 12 / V. 53",
+    fin: "S. 14 / V. 52"
   },
   14: {
     description: "Mission prophétique, sagesse et gratitude.",
-    debut: "S. n°15 / V. n°1",
-    fin: "S. n°16 / V. n°128"
+    debut: "S. 15 / V. 1",
+    fin: "S. 16 / V. 128"
   },
   15: {
     description: "Morale, récits édifiants et rappel de l’au-delà.",
-    debut: "S. n°17 / V. n°1",
-    fin: "S. n°18 / V. n°74"
+    debut: "S. 17 / V. 1",
+    fin: "S. 18 / V. 74"
   },
   16: {
     description: "Science divine, épreuves humaines et guidance.",
-    debut: "S. n°18 / V. n°75",
-    fin: "S. n°20 / V. n°135"
+    debut: "S. 18 / V. 75",
+    fin: "S. 20 / V. 135"
   },
   17: {
     description: "Prophètes, justice divine et résurrection.",
-    debut: "S. n°21 / V. n°1",
-    fin: "S. n°22 / V. n°78"
+    debut: "S. 21 / V. 1",
+    fin: "S. 22 / V. 78"
   },
   18: {
     description: "Foi sincère, comportement éthique et communauté.",
-    debut: "S. n°23 / V. n°1",
-    fin: "S. n°25 / V. n°20"
+    debut: "S. 23 / V. 1",
+    fin: "S. 25 / V. 20"
   },
   19: {
     description: "Miséricorde divine et distinction entre vérité et mensonge.",
-    debut: "S. n°25 / V. n°21",
-    fin: "S. n°27 / V. n°55"
+    debut: "S. 25 / V. 21",
+    fin: "S. 27 / V. 55"
   },
   20: {
     description: "Savoir, humilité et signes de la création.",
-    debut: "S. n°27 / V. n°56",
-    fin: "S. n°29 / V. n°45"
+    debut: "S. 27 / V. 56",
+    fin: "S. 29 / V. 45"
   },
   21: {
     description: "Responsabilité morale et préparation à l’au-delà.",
-    debut: "S. n°29 / V. n°46",
-    fin: "S. n°33 / V. n°30"
+    debut: "S. 29 / V. 46",
+    fin: "S. 33 / V. 30"
   },
   22: {
     description: "Éthique sociale et législation islamique.",
-    debut: "S. n°33 / V. n°31",
-    fin: "S. n°36 / V. n°27"
+    debut: "S. 33 / V. 31",
+    fin: "S. 36 / V. 27"
   },
   23: {
     description: "Message prophétique et miséricorde universelle.",
-    debut: "S. n°36 / V. n°28",
-    fin: "S. n°39 / V. n°31"
+    debut: "S. 36 / V. 28",
+    fin: "S. 39 / V. 31"
   },
   24: {
     description: "Lumière divine, purification morale et foi.",
-    debut: "S. n°39 / V. n°32",
-    fin: "S. n°41 / V. n°46"
+    debut: "S. 39 / V. 32",
+    fin: "S. 41 / V. 46"
   },
   25: {
     description: "Unicité de Dieu et finalité de l’existence humaine.",
-    debut: "S. n°41 / V. n°47",
-    fin: "S. n°45 / V. n°37"
+    debut: "S. 41 / V. 47",
+    fin: "S. 45 / V. 37"
   },
   26: {
     description: "Patience, appel à Dieu et victoire spirituelle.",
-    debut: "S. n°46 / V. n°1",
-    fin: "S. n°51 / V. n°30"
+    debut: "S. 46 / V. 1",
+    fin: "S. 51 / V. 30"
   },
   27: {
     description: "Jugement dernier et rappel puissant.",
-    debut: "S. n°51 / V. n°31",
-    fin: "S. n°57 / V. n°29"
+    debut: "S. 51 / V. 31",
+    fin: "S. 57 / V. 29"
   },
   28: {
     description: "Discipline spirituelle et règles communautaires.",
-    debut: "S. n°58 / V. n°1",
-    fin: "S. n°66 / V. n°12"
+    debut: "S. 58 / V. 1",
+    fin: "S. 66 / V. 12"
   },
   29: {
     description: "Courtes sourates centrées sur la foi et l’au-delà.",
-    debut: "S. n°67 / V. n°1",
-    fin: "S. n°77 / V. n°50"
+    debut: "S. 67 / V. 1",
+    fin: "S. 77 / V. 50"
   },
   30: {
     description: "Rappels finaux, monothéisme et destinée humaine.",
-    debut: "S. n°78 / V. n°1",
-    fin: "S. n°114 / V. n°6"
+    debut: "S. 78 / V. 1",
+    fin: "S. 114 / V. 6"
   }
 };
 
@@ -1103,10 +1095,16 @@ function renderGrid(juzData) {
       statusClass = 'badge-finished';
     }
 
+
+    const total = j.status === 'free' ? 0 : 1;
+    const finishedJ = j.status === 'finished' ? 1 : 0;
+    const pendingJ = j.status === 'assigned' ? 1 : 0;
+
     card.innerHTML = `
     <div class="juz-header">
       <label class="juz-checkbox">
-        <span class="juz-number">Juz ${j.number}</span>
+        <span class="juz-number">Juz N° ${j.number}</span>
+        <span class="juz-number">${juzDetails[j.number].debut}</span>
       </label>
     </div>
   
@@ -1119,42 +1117,67 @@ function renderGrid(juzData) {
       </button>
   
       <div class="zikr-contribs hidden">
-        <span>${pseudo !== '' ? pseudo : "Aucun contributeur"}</span>
+       
   
-        <hr>
-  
-<div class="zikr-info">
-  <div class="row">
-    <span class="label">Juz n°</span>
-    <span class="value">${j.number}</span>
-  </div>
-  <div class="row">
-    <span class="label">Desc.</span>
-    <span class="value">${juzDetails[j.number].description}</span>
-  </div>
-  <div class="row">
-    <span class="label">Début</span>
-    <span class="value">${juzDetails[j.number].debut}</span>
-  </div>
-  <div class="row">
-    <span class="label">Fin</span>
-    <span class="value">${juzDetails[j.number].fin}</span>
+        
+          <div class="contrib-header">
+    <strong>${pseudo || "Aucun contributeur"}</strong>
   </div>
 
+  <div class="contrib-stats">
+    <div class="stat">Choisi : <strong>${total}</strong></div>
+    <div class="stat success">✔ Terminé : ${finishedJ}</div>
+    <div class="stat warning">⏳ En attente : ${pendingJ}</div>
+  </div>
 
-  <div class="juz-actions">
-  <button class="btn-assign">
-    Choisir
-  </button>
-  <button class="btn-finish">
-    Terminer
-  </button>
+  <div class="zikr-info">
+    <div class="juz-actions">
+      <button class="contrib-btn btn-assign">
+        Choisir
+      </button>
+      <button class="contrib-btn btn-finish ">
+        Terminer
+      </button>
+   </div>
+
+  
+        
+    
+    
+    
+   
+  </div>
+    <hr>
+
+    <table class="zikr-table zikr-totals-table">
+      <tr>
+        <td class="label">Juz n°</td>
+        <td class="value"><strong>${j.number}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Début Juz</td>
+        <td class="value"><strong>${juzDetails[j.number].debut}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Fin Juz</td>
+        <td class="value"><strong>${juzDetails[j.number].fin}</strong></td>
+      </tr>
+
+      <!-- Input pleine largeur -->
+      <tr>
+        <td colspan="2">
+            <p>${juzDetails[j.number].description}</p>
+        </td>
+      </tr>
+    </table>
+
+
+
+
+
+
 </div>
 </div>
-
-
-      </div>
-    </div>
   `;
 
     const assignBtn = card.querySelector('.btn-assign');
@@ -1336,6 +1359,8 @@ function openCreateSessionModal() {
         <label> Un code d'invitation sera généré</label>
       </div>
   
+      <hr style="margin:16px 0">
+      
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="ns_create" class="btn btn-success">Démarrer</button>
         <button id="ns_cancel" class="btn">Annuler</button>
@@ -1347,6 +1372,11 @@ function openCreateSessionModal() {
   const endDate = modal.querySelector("#ns_end");
   const publicCheckbox = modal.querySelector("#ns_public");
   const invitedInput = modal.querySelector("#ns_invited");
+
+  const typeSelect = modal.querySelector("#ns_type");
+  const zikrBlock = modal.querySelector("#zikrFormulasCreate");
+  const addFormulaBtn = modal.querySelector("#addFormulaBtn");
+
 
   // État initial : privé
   invitedInput.disabled = false;
@@ -1362,7 +1392,52 @@ function openCreateSessionModal() {
     }
   });
 
-  
+  addFormulaBtn.addEventListener("click", () => {
+    const container = zikrBlock.querySelector(".zikr-formula").parentNode;
+
+    const div = document.createElement("div");
+    div.className = "zikr-formula";
+    div.innerHTML = `
+      <input placeholder="Nom formule" class="zf-name" />
+      <input type="number" placeholder="Objectif" class="zf-target" />
+    `;
+
+    container.insertBefore(div, addFormulaBtn);
+  });
+
+  function updateCampagneTypeUI() {
+    const isZikr = typeSelect.value === "zikr";
+    zikrBlock.style.display = isZikr ? "block" : "none";
+  }
+
+  // Initialisation (important)
+  updateCampagneTypeUI();
+
+  // Écoute du changement
+  typeSelect.addEventListener("change", updateCampagneTypeUI);
+
+
+  // ===== INIT UI DATES (UNE FOIS) =====
+  const today = new Date().toISOString().split("T")[0];
+  startDate.min = today;
+  endDate.min = today;
+  endDate.disabled = true;
+
+  startDate.addEventListener("change", () => {
+    endDate.min = startDate.value;
+    endDate.disabled = false;
+
+    if (endDate.value && endDate.value < startDate.value) {
+      endDate.value = startDate.value;
+    }
+  });
+
+  // Empêcher saisie clavier
+  [startDate, endDate].forEach(input => {
+    input.addEventListener("keydown", e => e.preventDefault());
+  });
+
+
   // ----- Bouton CRÉER -----
   modal.querySelector('#ns_create').onclick = async () => {
     try {
@@ -1396,15 +1471,14 @@ function openCreateSessionModal() {
       const inviteCode = !isPublic
         ? Math.random().toString(36).slice(2, 8).toUpperCase()
         : null;
-
-
       const start = startDate.value;
       const end = endDate.value;
-
-      const today = new Date().toISOString().split("T")[0];
-
-      startDate.min = today;
-      endDate.min = today;
+      /*
+      
+            const today = new Date().toISOString().split("T")[0];
+      
+            startDate.min = today;
+            endDate.min = today;*/
 
 
       if (!start || !end) {
@@ -1415,7 +1489,7 @@ function openCreateSessionModal() {
         return;
       }
 
-      startDate.addEventListener("change", () => {
+      /*startDate.addEventListener("change", () => {
         endDate.min = startDate.value;
       
         if (endDate.value && endDate.value < startDate.value) {
@@ -1431,24 +1505,24 @@ function openCreateSessionModal() {
           "error"
         );
         return;
-      }
+      }*/
+      /*
+            if (new Date(end) < new Date(start)) {
+              showModalFeedback(
+                "La date de fin doit être postérieure à la date de début",
+                "error"
+              );
+              return;
+            }*/
 
-      if (new Date(end) < new Date(start)) {
-        showModalFeedback(
-          "La date de fin doit être postérieure à la date de début",
-          "error"
-        );
-        return;
-      }
-      
-      startDate.addEventListener("keydown", e => e.preventDefault());
-      endDate.addEventListener("keydown", e => e.preventDefault());
+      //startDate.addEventListener("keydown", e => e.preventDefault());
+      //endDate.addEventListener("keydown", e => e.preventDefault());
 
       const sessionId = await createSession({
         name,
         typeCampagne,
-        startDate: startvalue || null,
-        endDate: end.value || null,
+        startDate: start || null,
+        endDate: end || null,
         isPublic,
         invitedEmails: parseCSVemails(invitedInput.value),
         inviteCode,
@@ -1478,7 +1552,7 @@ function openCreateSessionModal() {
       }
 
     } catch (e) {
-      showModalFeedback(e.message, "sytem");
+      showModalFeedback(e.message, "system");
     }
   };
 
@@ -1528,13 +1602,17 @@ function showZikrCampaign(session) {
     'formules'
   );
 
-  onSnapshot(colRef, snap => {
+
+  const unsub = onSnapshot(colRef, snap => {
     const formules = snap.docs.map(d => ({
       id: d.id,
       ...d.data()
     }));
     renderZikrFormulas(formules, session.id);
   });
+
+  // 🔥 IMPORTANT : enregistrer pour cleanup
+  unsubscribers.push(unsub);
 }
 
 /*
@@ -1546,7 +1624,27 @@ document.addEventListener("click", e => {
 });
 */
 
+function getZikrStatus(objectif, current, finished) {
+  // Rien choisi
+  if (!current || current === 0) {
+    return { key: 'free', label: 'disponible' };
+  }
 
+  // Tout choisi MAIS pas tout terminé
+  if (current === objectif && finished < objectif) {
+    return { key: 'assigned', label: 'en cours' };
+  }
+
+  // Tout choisi ET tout terminé
+  if (current === objectif && finished === objectif) {
+    return { key: 'finished', label: 'terminé' };
+  }
+
+  // Cas général : en cours
+  return { key: 'assigned', label: 'en cours' };
+}
+
+/*
 function getZikrStatus(objectif, current, finished) {
   if (!current || current === 0) {
     return { key: 'free', label: 'disponible' };
@@ -1558,7 +1656,7 @@ function getZikrStatus(objectif, current, finished) {
 
   return { key: 'assigned', label: 'en cours' };
 }
-
+*/
 async function renderZikrFormulas(formules, sessionId) {
   const container = document.getElementById('zikrFormulas');
   container.innerHTML = '';
@@ -1569,6 +1667,8 @@ async function renderZikrFormulas(formules, sessionId) {
 
     const finished = Number(f.finished || 0);
     const reste = Math.max(0, objectif - current);
+
+
 
     const status = getZikrStatus(objectif, current, finished);
 
@@ -1592,50 +1692,87 @@ async function renderZikrFormulas(formules, sessionId) {
       ...d.data()
     }));
 
-
+    /*
+    
+        const contributorsHtml = contributions.length
+          ? `
+          <table class="zikr-table zikr-contribs-table">
+            ${contributions.map(c => {
+            const isOwner = c.uid === auth.currentUser.uid;
+            const alreadyFinished = !!c.isFinished;
+    
+            return `
+                <tr class="zikr-contributor" data-uid="${c.uid}">
+                  <!-- Nom à gauche -->
+                  <td class="label contrib-name">
+                    ${c.pseudo}
+                  </td>
+      
+                  <!-- Valeur à droite -->
+                  <td class="value contrib-value">
+                    ${c.value}
+                  </td>
+      
+                  <!-- Actions à droite -->
+                  <td class="value contrib-actions">
+                    <button
+                      class="contrib-btn edit"
+                      data-action="edit"
+                      ${!isOwner || alreadyFinished ? 'disabled' : ''}
+                      title="${!isOwner ? '' : alreadyFinished ? '' : 'Modifier la contribution'}"
+                    >✏️</button>
+      
+                    <button
+                      class="contrib-btn finish"
+                      data-action="finish"
+                      ${!isOwner || alreadyFinished ? 'disabled' : ''}
+                      title="${alreadyFinished && isOwner ? 'Déjà terminé' : !isOwner ? '' : 'Marquer comme terminé'}"
+                    >✔️</button>
+                  </td>
+                </tr>
+              `;
+          }).join('')}
+          </table>
+        `
+          : `<em class="no-contrib">Aucun contributeur</em>`;
+    */
 
     const contributorsHtml = contributions.length
       ? `
-      <table class="zikr-table zikr-contribs-table">
-        ${contributions.map(c => {
+  <table class="zikr-table zikr-contribs-table">
+    ${contributions.map(c => {
+        const total = Number(c.value || 0);
+        const finishedC = Number(c.finished || 0);
+        const pending = Math.max(0, total - finishedC);
         const isOwner = c.uid === auth.currentUser.uid;
-        const alreadyFinished = !!c.isFinished;
 
         return `
-            <tr class="zikr-contributor" data-uid="${c.uid}">
-              <!-- Nom à gauche -->
-              <td class="label contrib-name">
-                ${c.pseudo}
-              </td>
-  
-              <!-- Valeur à droite -->
-              <td class="value contrib-value">
-                ${c.value}
-              </td>
-  
-              <!-- Actions à droite -->
-              <td class="value contrib-actions">
-                <button
-                  class="contrib-btn edit"
-                  data-action="edit"
-                  ${!isOwner || alreadyFinished ? 'disabled' : ''}
-                  title="${!isOwner ? '' : alreadyFinished ? '' : 'Modifier la contribution'}"
-                >✏️</button>
-  
-                <button
-                  class="contrib-btn finish"
-                  data-action="finish"
-                  ${!isOwner || alreadyFinished ? 'disabled' : ''}
-                  title="${alreadyFinished && isOwner ? 'Déjà terminé' : !isOwner ? '' : 'Marquer comme terminé'}"
-                >✔️</button>
-              </td>
-            </tr>
-          `;
-      }).join('')}
-      </table>
-    `
-      : `<em class="no-contrib">Aucun contributeur</em>`;
+        <tr class="zikr-contributor" data-uid="${c.uid}">
+          <td class="label contrib-name">
+            ${c.pseudo}
+          </td>
 
+          <td class="value contrib-value">
+            <div class="contrib-stats">
+              <div class="stat">Choisi : <strong>${total}</strong></div>
+              <div class="stat success">✔ Terminé : ${finishedC}</div>
+              <div class="stat warning">⏳ En attente : ${pending}</div>
+            </div>
+          </td>
+
+
+          <td class="value contrib-actions">
+            <button class="contrib-btn btn-finish"
+              ${!isOwner || pending === 0 ? 'disabled' : ''}>
+              Terminer
+            </button>
+          </td>
+        </tr>
+      `;
+      }).join('')}
+  </table>
+`
+      : `<em class="no-contrib">Aucun contributeur</em>`;
 
 
     const card = document.createElement('div');
@@ -1669,11 +1806,11 @@ async function renderZikrFormulas(formules, sessionId) {
     <!-- Tableau sans bordure -->
     <table class="zikr-table zikr-totals-table">
       <tr>
-        <td class="label">Déjà choisi</td>
+        <td class="label">Total déjà choisi</td>
         <td class="value"><strong>${current}</strong></td>
       </tr>
       <tr>
-        <td class="label">Déjà terminé</td>
+        <td class="label">Total déjà terminé</td>
         <td class="value"><strong>${finished}</strong></td>
       </tr>
       <tr>
@@ -1716,7 +1853,25 @@ async function renderZikrFormulas(formules, sessionId) {
 `;
 
 
-
+    /*
+    
+        const input = card.querySelector('.zikr-input');
+        const validateBtn = card.querySelector('.zikr-validate-btn');
+    
+        validateBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+    
+          const value = Number(input.value);
+          if (!value || value <= 0) return;
+    
+          await validateZikrFormula(
+            currentSessionId,
+            f.id,
+            card
+          );
+    
+          input.value = '';
+        });*/
 
     const input = card.querySelector('.zikr-input');
     const validateBtn = card.querySelector('.zikr-validate-btn');
@@ -1724,9 +1879,41 @@ async function renderZikrFormulas(formules, sessionId) {
     validateBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
-      const value = Number(input.value);
-      if (!value || value <= 0) return;
+      const raw = input.value.trim();
+      const value = Number(raw);
 
+      // ❌ Champ vide
+      if (!raw) {
+        showModalFeedback("Veuillez entrer un nombre", "error");
+        return;
+      }
+
+      // ❌ Pas un nombre
+      if (Number.isNaN(value)) {
+        showModalFeedback("Valeur invalide", "error");
+        return;
+      }
+
+      // ❌ Négatif ou zéro
+      if (value <= 0) {
+        showModalFeedback("Le nombre doit être supérieur à zéro", "error");
+        return;
+      }
+      const myContrib = contributions.find(
+        c => c.uid === auth.currentUser.uid
+      );
+
+      if (myContrib && myContrib.finished >= myContrib.value) {
+        showModalFeedback(
+          `ℹ️ Votre précédente contribution est terminée.
+  Une nouvelle contribution va être ajoutée.`,
+          "info",
+          4500
+        );
+      }
+
+
+      // ✅ OK → validation Firestore
       await validateZikrFormula(
         currentSessionId,
         f.id,
@@ -1875,34 +2062,11 @@ document.querySelectorAll('.auth-tab').forEach(tab => {
 });
 
 
-/*
-document.getElementById('validateZikrChoices').addEventListener('click', async () => {
-
-  const cards = document.querySelectorAll('.zikr-card');
-
-  for (const card of cards) {
-    const input = card.querySelector('.zikr-input');
-    if (!input || input.disabled) continue;
-
-    const value = Number(input.value);
-    if (!value || value <= 0) continue;
-
-    const formulaId = input.dataset.formuleId;
-
-    await validateZikrFormula(
-      currentSessionId,
-      formulaId,
-      card
-    );
-    updateLocalContributorUI(card, value);
-  }
-});
-*/
 
 //FIN
 
 
-
+/*
 async function validateZikrFormula(sessionId, formulaId, card) {
   const user = auth.currentUser;
   if (!user) return;
@@ -1924,6 +2088,28 @@ async function validateZikrFormula(sessionId, formulaId, card) {
   );
 
   const snap = await getDoc(formulaRef);
+
+  await setDoc(
+    doc(
+      db,
+      SESSIONS_COLLECTION,
+      sessionId,
+      'formules',
+      formulaId,
+      'contributions',
+      user.uid
+    ),
+    {
+      pseudo: user.displayName || 'Utilisateur',
+      value: increment(value),
+      isFinished: false, // 🔥 NOUVELLE CONTRIBUTION
+      updatedAt: serverTimestamp()
+    },
+    { merge: true }
+  );
+
+  
+  
   if (!snap.exists()) return;
 
   const data = snap.data();
@@ -1989,6 +2175,117 @@ async function validateZikrFormula(sessionId, formulaId, card) {
       ? '🎉 Objectif atteint,'
       : '✅ Contribution enregistrée'
   ,"success");
+}
+*/
+
+async function validateZikrFormula(sessionId, formulaId, card) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const input = card.querySelector('.zikr-input');
+  const raw = input.value.trim();
+  const value = Number(raw);
+
+  // ❌ validations UI
+  if (!raw || Number.isNaN(value) || value <= 0) {
+    showModalFeedback("❌ Entrez un nombre valide", "error");
+    return;
+  }
+
+  const formulaRef = doc(
+    db,
+    SESSIONS_COLLECTION,
+    sessionId,
+    'formules',
+    formulaId
+  );
+
+  const snap = await getDoc(formulaRef);
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+
+  const objectif = Number(data.objectif || 0);
+  const current = Number(data.current || 0);
+  const finished = Number(data.finished || 0);
+  const reste = Math.max(0, objectif - current);
+
+  // 🛑 objectif déjà entièrement terminé
+  if (current === objectif && finished === objectif) {
+    showModalFeedback("✅ Cette formule est déjà totalement terminée", "info");
+    input.value = '';
+    return;
+  }
+
+  // 🛑 dépassement
+  if (value > reste) {
+    showModalFeedback(
+      `❌ Vous ne pouvez pas dépasser le reste (${reste})`,
+      "error"
+    );
+    return;
+  }
+
+  // ℹ️ info si l'utilisateur recommence après une validation
+  const contribRef = doc(
+    db,
+    SESSIONS_COLLECTION,
+    sessionId,
+    'formules',
+    formulaId,
+    'contributions',
+    user.uid
+  );
+
+  const contribSnap = await getDoc(contribRef);
+  if (contribSnap.exists() && contribSnap.data()?.isFinished) {
+    showModalFeedback(
+      "ℹ️ Vous avez déjà validé une contribution. Une nouvelle contribution démarre.",
+      "info",
+      4000
+    );
+  }
+
+  // ✅ calculs
+  const newCurrent = current + value;
+  const newReste = objectif - newCurrent;
+
+  // 🔄 mise à jour formule
+  await updateDoc(formulaRef, {
+    current: newCurrent,
+    reste: newReste
+  });
+
+  // 🧠 contribution utilisateur (cumulée, réouvrable)
+  await setDoc(
+    contribRef,
+    {
+      pseudo: user.displayName || 'Utilisateur',
+      value: increment(value),
+      isFinished: false, // 🔥 nouvelle contribution
+      updatedAt: serverTimestamp()
+    },
+    { merge: true }
+  );
+
+  // 🔓 accès discussion
+  await setDoc(
+    doc(db, SESSIONS_COLLECTION, sessionId, 'zikrContributions', user.uid),
+    { hasContributed: true },
+    { merge: true }
+  );
+
+  input.value = '';
+
+  showModalFeedback(
+    newReste === 0
+      ? "📌 Objectif entièrement choisi. En attente des validations."
+      : `✅ Contribution enregistrée.
+  Il reste ${newReste} à choisir.`,
+    "success",
+    4000
+  );
+
 }
 
 function showModalFeedback(
@@ -2080,6 +2377,8 @@ function openInviteCodeModal() {
       <input id="inviteCodeInput" placeholder="Code d’invitation" />
 
       <p id="inviteError" style="color:red;min-height:20px"></p>
+
+      <hr style="margin:16px 0">
 
       <div style="display:flex;gap:8px;margin-top:12px;">
         <button id="validateInviteCodeBtn" class="btn btn-success">Rejoindre</button>
@@ -2326,13 +2625,15 @@ function openProfileCodeModal() {
         <input id="profilePseudo" maxlength="14" />
       
         <p id="profileError"></p>
+
+        <hr style="margin:16px 0">
       
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button id="saveProfileBtn" class="btn btn-success">Enregistrer</button>
           <button id="closeProfileModal" class="btn">Annuler</button>
         </div>
   
-        <hr style="margin:16px 0">
+        
   
         <button id="logoutFromProfile" class="btn btn-danger" style="width:100%">
           Déconnexion
