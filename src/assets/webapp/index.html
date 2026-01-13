@@ -29,18 +29,15 @@
       <select id="languageSelect" class="lang-select">
         <option value="fr" data-flag="🇫🇷">🇫🇷 Français</option>
 
-        <!-- Wolof → Sénégal -->
+        <!-- Wolof → Sénégal 
         <option value="wo" data-flag="🇸🇳">🇸🇳 Wolof</option>
         
         <option value="en" data-flag="🇬🇧">🇬🇧 Anglais</option>
         
-        <!-- Arabe → Arabie Saoudite -->
         <option value="ar" data-flag="🇸🇦">🇸🇦 Arabe</option>
-        
-        <!-- Nouvelles langues -->
         <option value="es" data-flag="🇪🇸">🇪🇸 Espagnol</option>
         <option value="pt" data-flag="🇵🇹">🇵🇹 Portugais</option>
-        <option value="de" data-flag="🇩🇪">🇩🇪 Allemand</option>
+        <option value="de" data-flag="🇩🇪">🇩🇪 Allemand</option>-->
         
       </select>
     
@@ -54,45 +51,79 @@
   <main id="main">
     <section id="home" class="page">
       <div class="home-card">
-        <h2>Bienvenue sur ReadTogether</h2>
-        <p>Unir nos lectures, unir nos cœurs. Organisez la répartition des 30 Juz en groupe.</p>
+        <h2>Bienvenue sur Together App</h2>
+        <p>
+          Rassemblons nos cœurs autour du zikr.
+          Partagez la lecture des 30 Juz et accomplissez
+          des formules de zikr ensemble, où que vous soyez.
+        </p>
+
         <button id="homeConnectBtn" class="btn btn-primary" aria-haspopup="true">Se connecter</button>
+      </div>
+      <div class="home-card">
+        <h3>Protection de vos données personnelles</h3>
+      
+        <p>
+          Dans le cadre de l’utilisation de Together App, nous collectons et utilisons
+          certaines données personnelles nécessaires au bon fonctionnement du service,
+          notamment votre adresse e-mail, votre pseudo et votre mot de passe.
+        </p>
+      
+        <p>
+          À terme, avec votre accord, des données de localisation pourront être utilisées
+          afin d’améliorer certaines fonctionnalités liées à la position géographique.
+        </p>
+      
+        <p>
+          Vos données sont utilisées exclusivement dans le cadre de l’application,
+          ne sont ni revendues ni partagées à des tiers, et sont protégées conformément
+          à la réglementation en vigueur.
+        </p>
+      
+        <label class="consent-checkbox">
+          <input type="checkbox" id="consent" required />
+          <span>
+            J’accepte la collecte et l’utilisation de mes données personnelles
+            conformément à la politique de confidentialité.
+          </span>
+        </label>
       </div>
     </section>
 
+    
 
-  <section id="authPage" class="page card" hidden>
-    <div class="auth-tabs">
-      <button class="auth-tab active" data-tab="loginPanel">Se connecter</button>
-      <button class="auth-tab" data-tab="signupPanel">S'inscrire</button>
-    </div>
-  
-    <!-- Connexion -->
-    <div id="loginPanel" class="auth-panel active">
-      <div class="card">
-        <h3>Connexion Email</h3>
-        <input id="emailInput" type="email" placeholder="Adresse email" />
-        <input id="passwordInput" type="password" placeholder="Mot de passe" />
-        <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
-        <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
-        <!-- Feedback ici -->
-        <div id="loginFeedback" class="auth-feedback"></div>
+    <section id="authPage" class="page card" hidden>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="loginPanel">Se connecter</button>
+        <button class="auth-tab" data-tab="signupPanel">S'inscrire</button>
       </div>
-    </div>
-  
-    <!-- Inscription -->
-    <div id="signupPanel" class="auth-panel">
-      <div class="card">
-        <h3>Créer un compte</h3>
-        <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
-        <input id="signupEmailInput" type="email" placeholder="Adresse email" />
-        <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
-        <button id="emailSignupBtn" class="btn btn-primary">Créer un compte</button>
-        <!-- Feedback ici -->
-        <div id="signupFeedback" class="auth-feedback"></div>
+    
+      <!-- Connexion -->
+      <div id="loginPanel" class="auth-panel active">
+        <div class="card">
+          <h3>Connexion Email</h3>
+          <input id="emailInput" type="email" placeholder="Adresse email" />
+          <input id="passwordInput" type="password" placeholder="Mot de passe" />
+          <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
+          <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
+          <!-- Feedback ici -->
+          <div id="loginFeedback" class="auth-feedback"></div>
+        </div>
       </div>
-    </div>
-  </section>
+    
+      <!-- Inscription -->
+      <div id="signupPanel" class="auth-panel">
+        <div class="card">
+          <h3>Créer un compte</h3>
+          <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
+          <input id="signupEmailInput" type="email" placeholder="Adresse email" />
+          <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
+          <button id="emailSignupBtn" class="btn btn-primary">Créer un compte</button>
+          <!-- Feedback ici -->
+          <div id="signupFeedback" class="auth-feedback"></div>
+        </div>
+      </div>
+    </section>
   
   
     <section id="dashboard" class="page" hidden>
@@ -125,7 +156,6 @@
         
         <div id="sessions"></div>
       </div>
-
 
       <div id="sessionView" class="card" hidden>
         <button id="backToSessionsBtn" class="back-btn">
@@ -177,7 +207,7 @@
         <!-- Onglets -->
         <div class="session-tabs">
           <button id="tabJuz" class="tab-btn">Juz</button>
-          <button id="tabFormula" class="tab-btn">Formule de Zikr</button>
+          <button id="tabFormula" class="tab-btn hidden">Formule de Zikr</button>
           <button id="tabDiscussion" class="tab-btn">Discussion</button>
         </div>
 
@@ -215,22 +245,14 @@
         </div>
         
       </div>
-
     </section>
 
-  </main>
-
-<button
-  id="scrollTopBtn"
-  class="scroll-btn scroll-btn-bottom"
-  aria-label="Retour en haut"
->
-  <i class="fas fa-chevron-up"></i>
-</button>
-
-
-  <script type="module" src="firebase.js"></script>
-  <script type="module" src="app.js"></script>
+    <button
+      id="scrollTopBtn"
+      class="scroll-btn scroll-btn-bottom"
+      aria-label="Retour en haut">
+      <i class="fas fa-chevron-up"></i>
+    </button>
 
 
 
@@ -243,7 +265,7 @@
       </span>
       <span class="label">Rejoindre</span>
     </button>
-  
+
     <!-- Nouvelle Campagne -->
     <button id="newSessionBtn" class="bottom-btn">
       <span class="icon-circle">
@@ -251,7 +273,7 @@
       </span>
       <span class="label">Démarrer</span>
     </button>
-  
+
     <!-- Paramètres -->
     <button id="profileEdition" class="bottom-btn">
       <span class="icon-circle">
@@ -259,11 +281,13 @@
       </span>
       <span class="label">Paramétrer</span>
     </button>
-  
-  </div>
-  
 
   </div>
+  </main>
+
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
 
 </body>
 

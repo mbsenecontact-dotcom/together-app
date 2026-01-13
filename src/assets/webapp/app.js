@@ -103,7 +103,7 @@ const sessionView = document.getElementById('sessionView');
     showPage('dashboard');
     document.getElementById('homeConnectBtn').style.display = 'none';
 
-    document.getElementById('bottomActionBtn').style.display = 'flex';
+    showBottomBar();
 
 
     const userRef = doc(db, 'users', user.uid);
@@ -165,7 +165,7 @@ const sessionView = document.getElementById('sessionView');
   };
 
   document.getElementById('menuEdit').onclick = () => {
-    openEditSessionModal(currentSession); // à créer si besoin
+    //openEditSessionModal(currentSession); // à créer si besoin
   };
   /*
   document.getElementById('menuClose').onclick = () => {
@@ -1121,32 +1121,31 @@ function renderGrid(juzData) {
   
         
           <div class="contrib-header">
-    <strong>${pseudo || "Aucun contributeur"}</strong>
-  </div>
+            <strong>${pseudo || "Aucun contributeur"}</strong>
+          </div>
 
-  <div class="contrib-stats">
-    <div class="stat">Choisi : <strong>${total}</strong></div>
-    <div class="stat success">✔ Terminé : ${finishedJ}</div>
-    <div class="stat warning">⏳ En attente : ${pendingJ}</div>
-  </div>
+          <div class="contrib-stats">
+            <div class="stat"><strong>Choisi : ${total}</strong></div>
+            <div class="stat success"><strong>✔ Terminé : ${finishedJ}</strong></div>
+            <div class="stat warning"><strong>⏳ En attente : ${pendingJ}</strong></div>
+          </div>
 
-  <div class="zikr-info">
-    <div class="juz-actions">
-      <button class="contrib-btn btn-assign">
-        Choisir
-      </button>
-      <button class="contrib-btn btn-finish ">
-        Terminer
-      </button>
-   </div>
+          <div class="zikr-info">
+            <div class="juz-actions">
+              <button class="contrib-btn btn-assign">
+                Choisir
+              </button>
+              <button class="contrib-btn btn-finish ">
+                Terminer
+              </button>
+           </div>
+          </div>
 
-  
-        
-    
-    
-    
-   
-  </div>
+          <div class="contrib-card">
+          
+
+        </div>
+
     <hr>
 
     <table class="zikr-table zikr-totals-table">
@@ -1843,10 +1842,7 @@ async function renderZikrFormulas(formules, sessionId) {
 </tr>
 
 
-
     </table>
-
-
 
   </div>
 </div>
@@ -1923,24 +1919,24 @@ async function renderZikrFormulas(formules, sessionId) {
       input.value = '';
     });
 
-    card.querySelectorAll('.contrib-btn.finish')
-      .forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
 
-          const row = btn.closest('.zikr-contributor');
-          const uid = row.dataset.uid;
+      card.querySelectorAll('.contrib-btn.btn-finish')
+  .forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
 
-          // sécurité : seul l'utilisateur courant peut terminer
-          if (uid !== auth.currentUser.uid) {
-            showModalFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
-            return;
-          }
+      const row = btn.closest('.zikr-contributor');
+      const uid = row.dataset.uid;
 
-          const formulaId = card.dataset.formuleId;
-          await finishZikrContribution(currentSessionId, formulaId, card);
-        });
-      });
+      if (uid !== auth.currentUser.uid) {
+        showModalFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
+        return;
+      }
+
+      const formulaId = card.dataset.formuleId;
+      await finishZikrContribution(currentSessionId, formulaId, card);
+    });
+  });
 
 
     // 🔽 toggle contributeurs
@@ -2613,6 +2609,24 @@ function openProfileCodeModal() {
 
   const modal = openModal(`
       <div class="modal-card card">
+
+          <button id="logoutFromProfile" class="logout-icon" title="Déconnexion">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        width="22"
+        height="22"
+        aria-hidden="true"
+      >
+        <!-- Porte -->
+        <path d="M3 2h10v2H5v16h8v2H3z"/>
+        <!-- Flèche -->
+        <path d="M13 12l-4-4v3H7v2h2v3z"/>
+        <!-- Personne -->
+        <circle cx="17" cy="6" r="2"/>
+        <path d="M15 22v-6l-2-2 1-1 3 3v6z"/>
+      </svg>
+    </button>
         <h3>Mon profil</h3>
       
         <div class="profile-avatar">
@@ -2632,12 +2646,7 @@ function openProfileCodeModal() {
           <button id="saveProfileBtn" class="btn btn-success">Enregistrer</button>
           <button id="closeProfileModal" class="btn">Annuler</button>
         </div>
-  
-        
-  
-        <button id="logoutFromProfile" class="btn btn-danger" style="width:100%">
-          Déconnexion
-        </button>
+
       </div>
     `);
 
@@ -2692,16 +2701,56 @@ function openProfileCodeModal() {
 
     showModalFeedback('Profil mis à jour ✅');
   };
-  modal.querySelector('#logoutFromProfile').onclick = async () => {
-    await signOut(auth);
 
-    closeModal(modal);
-    showPage('home');
+  
+  modal.querySelector('#logoutFromProfile').onclick = () => {
+    const modalConfirm = openModal(`
+      <div class="modal-card card">
+        <h3>Déconnexion</h3>
+        <p>Vous voulez vous déconnecter ?</p>
+  
+        <hr style="margin:16px 0">
 
-    document.getElementById('homeConnectBtn').style.display = 'inline-block';
-    document.getElementById('bottomActionBtn').style.display = 'none';
+        <div style="display:flex;gap:8px;margin-top:16px;">
+          <button id="confirmLogout" class="btn btn-danger">Me déconnecter</button>
+          <button id="cancelLogout" class="btn">Annuler</button>
+        </div>
+      </div>
+    `);
+  
+    document.getElementById('confirmLogout').onclick = async () => {
+      
+  
+      await signOut(auth);
+      showModalFeedback('Déconnexion réussie!', 'success');
+
+      refreshMenuUserAvatar(); // 👈 ici
+
+      closeModal(modalConfirm);
+      showPage('home');
+
+      document.getElementById('homeConnectBtn').style.display = 'inline-block';
+      hideBottomBar();
+     
+
+    };
+  
+    document.getElementById('cancelLogout').onclick  = () => closeModal(modalConfirm);
   };
+  
+  
 
+}
+
+function refreshMenuUserAvatar(user) {
+  const avatarImg = document.querySelector('#menuUserAvatar img');
+  if (!avatarImg) return;
+
+  if (user && user.photoURL) {
+    avatarImg.src = user.photoURL;
+  } else {
+    avatarImg.src = 'default.jpg'; // avatar par défaut
+  }
 }
 
 
@@ -2860,3 +2909,25 @@ function initSessionTabs(session) {
     tabFormula.classList.remove("active");
   };
 }
+
+
+function showBottomBar() {
+  el.bottomActionBtn.style.display = 'flex';
+}
+
+function hideBottomBar() {
+  el.bottomActionBtn.style.display = 'none';
+}
+
+
+/*
+const consentCheckbox = document.getElementById('consent');
+
+if (!consentCheckbox.checked) {
+  showModalFeedback(
+    "❌ Vous devez accepter l’utilisation de vos données personnelles pour continuer.",
+    "error"
+  );
+  return;
+}
+*/
