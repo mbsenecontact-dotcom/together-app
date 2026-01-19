@@ -81,6 +81,7 @@ const sessionView = document.getElementById('sessionView');
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
 
+  setupNetworkWatcher();
 
 
   onAuthStateChanged(auth, async (user) => {
@@ -227,6 +228,73 @@ tabZikr.onclick = () => {
 };
 
 /* ---------- Helpers ---------- */
+
+async function hasRealInternet() {
+  try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(
+      'https://www.gstatic.com/generate_204',
+      {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal
+      }
+    );
+
+    return res && res.status === 204;
+  } catch {
+    return false;
+  }
+}
+
+
+function setupNetworkWatcher() {
+  let lastStatus = null;
+
+  async function check() {
+    const online = await hasRealInternet();
+    
+    console.log('On line : '+online);
+    if (online === lastStatus) return;
+    lastStatus = online;
+
+
+    console.log('Last Status : '+lastStatus);
+    if (!online) {
+      showModalFeedback(
+        'Connexion internet perdue. Certaines actions sont suspendues.',
+        'system'
+      );
+    } else {
+      showModalFeedback(
+        'Connexion internet rétablie ✅',
+        'success'
+      );
+    }
+  }
+
+  // écoute navigateur (rapide)
+  window.addEventListener('online', check);
+  window.addEventListener('offline', check);
+
+  // vérification active (tablette safe)
+  setInterval(check, 5000);
+
+  // état initial
+  check();
+}
+
+
+async function requireInternet() {
+  const ok = await hasRealInternet();
+  if (!ok) {
+    showModalFeedback('Connexion internet requise', 'error');
+  }
+  return ok;
+}
+
 
 function shareSessionInvite(meta) {
   const subject = `Invitation – ${meta.name}`;
