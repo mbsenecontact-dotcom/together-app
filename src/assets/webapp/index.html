@@ -60,34 +60,6 @@
 
         <button id="homeConnectBtn" class="btn btn-primary" aria-haspopup="true">Se connecter</button>
       </div>
-      <div class="home-card">
-        <h3>Protection de vos données personnelles</h3>
-      
-        <p>
-          Dans le cadre de l’utilisation de Together App, nous collectons et utilisons
-          certaines données personnelles nécessaires au bon fonctionnement du service,
-          notamment votre adresse e-mail, votre pseudo et votre mot de passe.
-        </p>
-      
-        <p>
-          À terme, avec votre accord, des données de localisation pourront être utilisées
-          afin d’améliorer certaines fonctionnalités liées à la position géographique.
-        </p>
-      
-        <p>
-          Vos données sont utilisées exclusivement dans le cadre de l’application,
-          ne sont ni revendues ni partagées à des tiers, et sont protégées conformément
-          à la réglementation en vigueur.
-        </p>
-      
-        <label class="consent-checkbox">
-          <input type="checkbox" id="consent" required />
-          <span>
-            J’accepte la collecte et l’utilisation de mes données personnelles
-            conformément à la politique de confidentialité.
-          </span>
-        </label>
-      </div>
     </section>
 
     
@@ -112,6 +84,8 @@
       </div>
     
       <!-- Inscription -->
+       
+      <!-- Feedback ici 
       <div id="signupPanel" class="auth-panel">
         <div class="card">
           <h3>Créer un compte</h3>
@@ -119,10 +93,37 @@
           <input id="signupEmailInput" type="email" placeholder="Adresse email" />
           <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
           <button id="emailSignupBtn" class="btn btn-primary">Créer un compte</button>
-          <!-- Feedback ici -->
+          
+          <div id="signupFeedback" class="auth-feedback"></div>
+        </div>
+      </div>-->
+      
+      <div id="signupPanel" class="auth-panel">
+        <div class="card">
+          <h3>Créer un compte</h3>
+      
+          <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
+          <input id="signupEmailInput" type="email" placeholder="Adresse email" />
+          <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
+      
+          <!-- ✅ Consentement -->
+          <label class="consent-checkbox" style="margin:12px 0;display:block">
+            <input type="checkbox" id="consentCheckbox" />
+            <span>
+              J’accepte la collecte et l’utilisation de mes données personnelles.
+              <a href="#" id="openPrivacyInfo">Vos données personnelles</a>
+            </span>
+          </label>
+      
+          <button id="emailSignupBtn" class="btn btn-primary">
+            Créer un compte
+          </button>
+      
           <div id="signupFeedback" class="auth-feedback"></div>
         </div>
       </div>
+      
+
     </section>
   
   
@@ -273,7 +274,7 @@
       </span>
       <span class="label">Démarrer</span>
     </button>
-
+    
     <!-- Paramètres -->
     <button id="profileEdition" class="bottom-btn">
       <span class="icon-circle">

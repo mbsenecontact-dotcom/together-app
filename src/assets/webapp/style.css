@@ -260,8 +260,8 @@ small {
     right: 32px
   }
 }
-
-body.menu-open main {
+ 
+body.menu-open .header ~ main {
   filter: blur(0.6px);
   pointer-events: none;
   user-select: none
@@ -1359,6 +1359,16 @@ main {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.zikr-formula {
+  display: flex;
+  gap: 10px;            /* espace entre les inputs */
+  align-items: center;  /* alignement vertical */
+}
+
+.zikr-formula input {
+  flex: 1;              /* même largeur pour les deux */
 }
 
 .zikr-header {

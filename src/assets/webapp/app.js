@@ -24,6 +24,27 @@ const profileEditionLink = document.getElementById("profileEdition");
 
 const filterButtons = [btnToutes, btnLectures, btnHistorique];
 
+const FORBIDDEN_WORDS = [
+  // insultes générales
+  "merde", "putain", "putin" , "pute" , "put" ,"con", "connard", "salope", "enculé",
+
+  // haine / discriminations
+  "juif", "sale juif", "antisémite",
+  "pd", "pédé", "tapette", "homosexuel de merde", "homosexuel",
+  "nègre", "bougnoule", "sale arabe",
+
+  // violence / extrême
+  "nazi", "hitler", "daech", "isis",
+
+  // insultes religieuses
+  "allah est", "islam de merde", "coran de merde",
+
+  // autres
+  "fuck", "shit", "bitch"
+];
+
+
+
 const el = {
   emailInput: document.getElementById('emailInput'),
   passwordInput: document.getElementById('passwordInput'),
@@ -88,36 +109,50 @@ const sessionView = document.getElementById('sessionView');
     if (!user) {
       showPage('home');
       el.sessionsDiv.innerHTML = '';
+      hideBottomBar(); // 🔥 important
       return;
     }
-
-    // email/password non vérifié
+  
+    // 🔒 Email/password non vérifié
     if (
       user.providerData.some(p => p.providerId === 'password') &&
       !user.emailVerified
     ) {
       showModalFeedback('Veuillez vérifier votre email.', "info");
       await signOut(auth);
+      hideBottomBar();
       return;
     }
-
-    showPage('dashboard');
-    document.getElementById('homeConnectBtn').style.display = 'none';
-
-    showBottomBar();
-
-
+  
     const userRef = doc(db, 'users', user.uid);
     const snap = await getDoc(userRef);
 
-    let pseudo = user.displayName;
 
+    // 🔒 RGPD — consentement obligatoire
+    if (!snap.exists() || snap.data().consentRGPD !== true) {
+      openConsentModal(user, userRef);
+      hideBottomBar();
+      showPage('home');
+      return;
+    }
+
+  
+    /* =====================================================
+       ✅ À PARTIR D’ICI → UTILISATEUR VRAIMENT AUTORISÉ
+       ===================================================== */
+  
+    showPage('dashboard');
+    document.getElementById('homeConnectBtn').style.display = 'none';
+    showBottomBar();
+  
+    let pseudo = user.displayName;
+  
     // 🟢 Google → pseudo auto
     if (!pseudo) {
       pseudo = generatePseudo();
       await updateProfile(user, { displayName: pseudo });
     }
-
+  
     const userData = {
       uid: user.uid,
       pseudo,
@@ -125,21 +160,20 @@ const sessionView = document.getElementById('sessionView');
       photoURL: user.photoURL || 'default.jpg',
       lastLogin: serverTimestamp()
     };
-
+  
     if (!snap.exists()) {
       userData.createdAt = serverTimestamp();
       await setDoc(userRef, userData);
     } else {
       await setDoc(userRef, userData, { merge: true });
     }
-
-    document.querySelector('#menuUserAvatar img').src = user.photoURL || 'default.jpg';
-
-
+  
+    document.querySelector('#menuUserAvatar img').src =
+      user.photoURL || 'default.jpg';
+  
     await loadSessions();
   });
-
-
+  
   // wire UI
   document.getElementById('homeConnectBtn').addEventListener('click', () => showPage('authPage'));
   el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
@@ -172,7 +206,7 @@ const sessionView = document.getElementById('sessionView');
   document.getElementById('menuClose').onclick = () => {
     document.getElementById('closeSessionBtn')?.click();
   };*/
-
+/*
   document.getElementById('menuDelete').onclick = async () => {
     if (!confirm('Supprimer définitivement cette campagne ?')) return;
 
@@ -181,7 +215,31 @@ const sessionView = document.getElementById('sessionView');
 
     sessionView.hidden = true;
     await loadSessions();
+  };*/
+
+  document.getElementById('menuDelete').onclick = () => {
+
+    if (!requireAdmin(currentSession)) return;
+
+    openConfirmModal({
+      title: "Supprimer la campagne",
+      message: "Cette action est définitive. Toutes les données de la campagne seront supprimées.",
+      confirmText: "Supprimer",
+      danger: true,
+      onConfirm: async () => {
+        await deleteDoc(
+          doc(db, SESSIONS_COLLECTION, currentSessionId)
+        );
+  
+        showModalFeedback("Campagne supprimée", "success");
+  
+        sessionView.hidden = true;
+        await loadSessions();
+      }
+    });
   };
+  
+  
 
 
 })();
@@ -228,6 +286,116 @@ tabZikr.onclick = () => {
 };
 
 /* ---------- Helpers ---------- */
+
+function isCampaignNameAllowed(name) {
+  if (!name) return false;
+
+  const cleanName = name.toLowerCase();
+
+  return !FORBIDDEN_WORDS.some(word =>
+    cleanName.includes(word)
+  );
+}
+
+
+async function areAllZikrFormulasFinished(sessionId) {
+  const snap = await getDocs(
+    collection(db, SESSIONS_COLLECTION, sessionId, 'formules')
+  );
+
+  if (snap.empty) return false;
+
+  return snap.docs.every(docu => {
+    const f = docu.data();
+    const objectif = Number(f.objectif || 0);
+    const finished = Number(f.finished || 0);
+    return objectif > 0 && finished === objectif;
+  });
+}
+
+
+function openConsentModal(user, userRef) {
+  const modal = openModal(`
+    <div class="modal-card card" style="max-width:520px">
+      <h3>Protection de vos données personnelles</h3>
+
+      <p>
+        Pour continuer à utiliser Together App, vous devez accepter
+        notre politique de confidentialité.
+      </p>
+
+      <p>
+        Vos données (email, pseudo, participation) sont utilisées
+        uniquement pour le fonctionnement de l’application.
+      </p>
+
+      <label class="consent-checkbox" style="margin-top:12px;display:block">
+        <input type="checkbox" id="retroConsent" />
+        <span>
+          J’accepte la collecte et l’utilisation de mes données personnelles
+        </span>
+      </label>
+
+      <hr style="margin:16px 0">
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="acceptConsentBtn" class="btn btn-success">
+          Accepter et continuer
+        </button>
+        <button id="logoutConsentBtn" class="btn">
+          Me déconnecter
+        </button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById('acceptConsentBtn').onclick = async () => {
+    const checked = document.getElementById('retroConsent').checked;
+    if (!checked) {
+      showModalFeedback(
+        "Vous devez accepter la politique pour continuer",
+        "error"
+      );
+      return;
+    }
+
+    // ✅ Sauvegarde RGPD
+    await setDoc(userRef, {
+      consentRGPD: true,
+      consentAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    closeModal(modal);
+    showModalFeedback("Merci ! Consentement enregistré ✅", "success");
+
+    // 🔁 relancer le flux normal
+    await loadSessions();
+    showPage('dashboard');
+    showBottomBar();
+  };
+
+  document.getElementById('logoutConsentBtn').onclick = async () => {
+    await signOut(auth);
+    closeModal(modal);
+  };
+}
+
+
+function requireAdmin(session) {
+  const user = auth.currentUser;
+
+  if (!user || !session) return false;
+
+  if (user.uid !== session.createdBy) {
+    showModalFeedback("Action réservée à l’administrateur de la campagne", "error");
+    return false;
+  }
+
+  return true;
+}
+
+
 
 async function hasRealInternet() {
   try {
@@ -371,11 +539,14 @@ el.emailSignupBtn?.addEventListener('click', async () => {
   const email = el.emailInput.value.trim();
   const password = el.passwordInput.value.trim();
   const pseudo = el.pseudoInput.value.trim();
+  const consentCheckbox = document.getElementById('consentCheckbox');
 
   if (!email || !password || !pseudo) {
     return showModalFeedback('Remplissez tous les champs', 'error');
   }
 
+
+  /*
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: pseudo });
@@ -389,7 +560,54 @@ el.emailSignupBtn?.addEventListener('click', async () => {
       showModalFeedback('Mot de passe incorrect', 'error');
     if (e.message == 'Firebase: Error (auth/invalid-email).')
       showModalFeedback('Email incorrect', 'error');
-  }
+  }*/
+
+    try {
+      // 🔒 Vérification consentement AVANT création du compte
+      
+      if (!consentCheckbox?.checked) {
+        showModalFeedback(
+          "Vous devez accepter la politique de confidentialité pour continuer",
+          "error"
+        );
+        return;
+      }
+    
+      // ✅ Création du compte
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+    
+      await updateProfile(cred.user, { displayName: pseudo });
+      await sendEmailVerification(cred.user);
+    
+      // ✅ SAUVEGARDE DU CONSENTEMENT (TRÈS IMPORTANT)
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        uid: cred.user.uid,
+        pseudo,
+        email,
+        consentRGPD: true,
+        consentAt: serverTimestamp(),
+        createdAt: serverTimestamp()
+      });
+    
+      showModalFeedback(
+        'Compte créé. Vérifiez votre email avant connexion.',
+        'success'
+      );
+    
+    } catch (e) {
+      console.error(e.message);
+    
+      if (e.message === 'Firebase: Error (auth/email-already-in-use).') {
+        showModalFeedback('Cet email est déjà utilisé', 'error');
+      } else if (e.message === 'Firebase: Error (auth/invalid-email).') {
+        showModalFeedback('Email incorrect', 'error');
+      } else if (e.message === 'Firebase: Error (auth/weak-password).') {
+        showModalFeedback('Mot de passe trop faible', 'error');
+      } else {
+        showModalFeedback('Erreur lors de la création du compte', 'error');
+      }
+    }
+    
 });
 
 // Connexion Email
@@ -403,21 +621,43 @@ el.emailLoginBtn?.addEventListener('click', async () => {
 
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
-
-    if (cred.user.providerData.some(p => p.providerId === 'password') && !cred.user.emailVerified) {
+  
+    // 🔒 Email/password non vérifié
+    if (
+      cred.user.providerData.some(p => p.providerId === 'password') &&
+      !cred.user.emailVerified
+    ) {
       showModalFeedback('Vérifiez votre email avant connexion.', 'error');
       await signOut(auth);
       return;
     }
-
+  
+    // 🔒 RGPD — vérification du consentement
+    const userRef = doc(db, 'users', cred.user.uid);
+    const snap = await getDoc(userRef);
+  
+    if (snap.exists() && snap.data().consentRGPD !== true) {
+      showModalFeedback(
+        "Veuillez accepter la politique de confidentialité pour continuer",
+        "error"
+      );
+      await signOut(auth);
+      return;
+    }
+  
+    // ✅ TOUT est OK
     showModalFeedback('Connexion réussie !', 'success');
-    //showPage('home');
+  
   } catch (e) {
-    if (e.message == 'Firebase: Error (auth/invalid-credential).')
+    if (e.message === 'Firebase: Error (auth/invalid-credential).') {
       showModalFeedback('Mot de passe incorrect', 'error');
-    if (e.message == 'Firebase: Error (auth/invalid-email).')
+    } else if (e.message === 'Firebase: Error (auth/invalid-email).') {
       showModalFeedback('Email incorrect', 'error');
+    } else {
+      showModalFeedback('Erreur de connexion', 'error');
+    }
   }
+  
 });
 
 // Mot de passe oublié
@@ -702,7 +942,6 @@ let unsubscribers = [];
 const sessionTitle = document.getElementById('sessionTitle');
 const sessionMeta = document.getElementById('sessionMeta');
 const stats = document.getElementById('stats');
-//const closeBtn = document.getElementById('closeSessionBtn');
 
 
 const menuShare = document.getElementById('menuShare');
@@ -736,7 +975,7 @@ async function openSession(session) {
   // Personnalisation selon type de campagne
   if (session.typeCampagne === 'zikr') {
     // sessionTitle.textContent = 'Série de Zikr';
-    stats.style.display = 'none';
+    stats.style.display = 'block'; // 👈 important
     //closeBtn.textContent = 'Clôturer la série de Zikr';
 
     document.getElementById('sessionView').classList.remove('hidden');
@@ -765,33 +1004,6 @@ async function openSession(session) {
   const menuShare = document.getElementById('menuShare');
   const inviteCodeValue = document.getElementById('inviteCodeValue');
 
-
-  /*
-    if (isAdmin && hasInviteCode) {
-      inviteCodeValue.textContent = 'Partager code : ' + meta.inviteCode;
-      menuShare.style.display = 'flex';
-      const inviteText = `Rejoins notre campagne "${meta.name}" avec ce code : ${meta.inviteCode}`;
-  
-      document.getElementById("shareBtn")?.addEventListener("click", async () => {
-        if (navigator.share) {
-          // 📱 Mobile : partage natif
-          try {
-            await navigator.share({
-              title: `Invitation – ${meta.name}`,
-              text: inviteText
-            });
-          } catch (err) {
-            console.log("Partage annulé", err);
-          }
-        } else {
-          // 💻 Fallback desktop (copie ou WhatsApp)
-          const url = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
-          window.open(url, "_blank");
-        }
-      });
-    } else {
-      menuShare.style.display = 'none';
-    }*/
 
   if (isAdmin && hasInviteCode) {
     inviteCodeValue.textContent = `Partager : ${meta.inviteCode}`;
@@ -865,13 +1077,10 @@ async function openSession(session) {
   const allFinished = arr.every(j => j && j.status === 'finished');
 
   // Références
-  //const closeBtn = el.closeSessionBtn;
   const inviteBox = document.getElementById('showCodeInvitation');
 
   // --- Campagne déjà clôturée ---
   if (isClosed) {
-    // closeBtn.style.display = 'inline-block';
-    //closeBtn.classList.add('is-closed');
 
     if (inviteBox) {
       inviteBox.classList.add('is-closed');
@@ -879,31 +1088,8 @@ async function openSession(session) {
 
     return;
   }
+  ///
 
-
-  /*
-    document.getElementById("sendMessageBtn").onclick = async () => {
-      const input = document.getElementById("messageInput");
-      const text = input.value.trim();
-      if (!text) return;
-  
-      const user = auth.currentUser;
-      if (!user || !currentSessionId) return;
-  
-      await addDoc(
-        collection(db, SESSIONS_COLLECTION, currentSessionId, "messages"),
-        {
-          text,
-          authorId: user.uid,
-          authorPseudo: user.displayName || "Utilisateur",
-          photoURL: user.photoURL || "default.jpg",
-          createdAt: serverTimestamp()
-        }
-      );
-  
-      input.value = "";
-    };
-  */
   document.getElementById("sendMessageBtn").onclick = async () => {
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
@@ -926,33 +1112,130 @@ async function openSession(session) {
     input.value = "";
   };
   // --- Campagne ouverte ---
+  /*
   if (isAdmin && allFinished) {
-    //closeBtn.style.display = 'inline-block';
-    //closeBtn.classList.remove('is-closed');
+  
+    el.closeSessionBtn.onclick = () => {
+
+
+      openConfirmModal({
+        title: "Clôturer la campagne",
+        message: "Cette action est définitive. Voulez-vous vraiment clôturer cette campagne ?",
+        confirmText: "Clôturer",
+        danger: true,
+        onConfirm: async () => {
+          await updateDoc(
+            doc(db, SESSIONS_COLLECTION, currentSessionId),
+            {
+              status: 'closed',
+              closedAt: serverTimestamp()
+            }
+          );
+    
+          showModalFeedback("Campagne clôturée", "success");
+    
+          if (inviteBox) inviteBox.classList.add('is-closed');
+    
+          await loadSessions();
+        }
+      });
+    };
+    
+  } else {
+    // 🔒 admin only et pour des Campagnés Totalement Terminées
+    if (auth.currentUser.uid !== currentSession.createdBy) 
+      {
+        showModalFeedback("Action non autorisée", "error");
+        return;
+     }
+  }*/
+
+   /*  el.closeSessionBtn.onclick = () => {
+      if (!requireAdmin(currentSession)) return;
+    
+      if (!allFinished) {
+        showModalFeedback("La campagne n’est pas encore totalement terminée", "info");
+        return;
+      }
+    
+      openConfirmModal({
+        title: "Clôturer la campagne",
+        message: "Cette action est définitive.",
+        confirmText: "Clôturer",
+        danger: true,
+        onConfirm: async () => {
+          await updateDoc(
+            doc(db, SESSIONS_COLLECTION, currentSessionId),
+            {
+              status: 'closed',
+              closedAt: serverTimestamp()
+            }
+          );
+    
+          showModalFeedback("Campagne clôturée", "success");
+          await loadSessions();
+        }
+      });
+    };*/
 
     el.closeSessionBtn.onclick = async () => {
-      if (!confirm('Clore définitivement cette campagne ?')) return;
-
-      await updateDoc(
-        doc(db, SESSIONS_COLLECTION, currentSessionId),
-        {
-          status: 'closed',
-          closedAt: serverTimestamp()
+      if (!requireAdmin(currentSession)) return;
+    
+      /* =========================
+         🧿 CAMPAGNE ZIKR
+         ========================= */
+      if (currentSession.typeCampagne === 'zikr') {
+        const allZikrFinished = await areAllZikrFormulasFinished(currentSessionId);
+    
+        if (!allZikrFinished) {
+          showModalFeedback(
+            "Impossible de clôturer : toutes les formules de Zikr ne sont pas encore terminées",
+            "info"
+          );
+          return;
         }
-      );
-
-      showModalFeedback('Campagne clôturée', "success");
-
-      // Griser immédiatement l’UI
-      // closeBtn.classList.add('is-closed');
-      if (inviteBox) inviteBox.classList.add('is-closed');
-
-      await loadSessions();
+      }
+    
+      /* =========================
+         📖 CAMPAGNE CORAN
+         ========================= */
+      if (currentSession.typeCampagne === 'coran') {
+        if (!allFinished) {
+          showModalFeedback(
+            "La campagne n’est pas encore totalement terminée",
+            "info"
+          );
+          return;
+        }
+      }
+    
+      /* =========================
+         ✅ CONFIRMATION
+         ========================= */
+      openConfirmModal({
+        title: "Clôturer la campagne",
+        message: "Cette action est définitive.",
+        confirmText: "Clôturer",
+        danger: true,
+        onConfirm: async () => {
+          await updateDoc(
+            doc(db, SESSIONS_COLLECTION, currentSessionId),
+            {
+              status: 'closed',
+              closedAt: serverTimestamp()
+            }
+          );
+    
+          showModalFeedback("Campagne clôturée", "success");
+          await loadSessions();
+        }
+      });
     };
-  } else {
-    // closeBtn.style.display = 'none';
-  }
+    
+    
 }
+
+
 
 async function userCanAccessDiscussion(session) {
   const user = auth.currentUser;
@@ -1320,60 +1603,25 @@ function renderGrid(juzData) {
       );
     });
 
-    // 🖱️ clic sur la carte → toggle checkbox (sauf disabled)
-    /*  card.addEventListener('click', e => {
-        if (e.target.tagName === 'INPUT') return;
-  
-        const checkbox = card.querySelector('.juz-check');
-        if (checkbox.disabled) return;
-  
-        checkbox.checked = !checkbox.checked;
-        // 🔥 FORCE la mise à jour globale
-        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-      });*/
-
-
-
     el.grid.appendChild(card);
   });
 
-  el.stats.textContent = `Terminés : ${finished} / 30`;
-  // setupJuzCheckboxes();
+  
+  if (currentSession?.typeCampagne === 'coran') {
+    el.stats.textContent = `Terminés : ${finished} / 30`;
+  }
+  
 }
 
-/*
-function showJuzFeedback({ success = [], refusedFree = [], refusedOther = [], message }) {
-  const box = document.getElementById('juzFeedback');
-  box.className = 'juz-feedback';
-
-  let html = '';
-
-  if (success.length) {
-    box.classList.add('success');
-    html += `✅ ${message} ${success.join(', ')}<br>`;
-  }
-
-  if (refusedFree.length || refusedOther.length) {
-    box.classList.add('error');
-    html += `❌ Refusés :<ul>`;
-    if (refusedFree.length) {
-      html += `<li>Juz non assignés : ${refusedFree.join(', ')}</li>`;
-    }
-    if (refusedOther.length) {
-      html += `<li>Juz assignés à un autre : ${refusedOther.join(', ')}</li>`;
-    }
-    html += `</ul>`;
-  }
-
-  box.innerHTML = html;
-}
-*/
 /* ---------- UI: create session modal ---------- */
-function openCreateSessionModal() {
+function openCreateSessionModal(session = null){
+
+  const isEditMode = !!session;
+
   const modal = openModal(`
     <div class="modal-card card" style="max-width:420px;width:100%">
-      <h3>Nouvelle Campagne</h3>
-  
+      <h3>${isEditMode ? "Modifier la campagne" : "Nouvelle Campagne"}</h3>
+
       <input id="ns_name" placeholder="Nom de la campagne" />
       <label style="margin-top:8px;display:block">
     Type de campagne :
@@ -1429,11 +1677,27 @@ function openCreateSessionModal() {
       <hr style="margin:16px 0">
       
       <div style="display:flex;gap:8px;margin-top:12px">
-        <button id="ns_create" class="btn btn-success">Démarrer</button>
+        <button id="ns_create" class="btn btn-success">
+          ${isEditMode ? "Enregistrer" : "Démarrer"}
+        </button>
         <button id="ns_cancel" class="btn">Annuler</button>
       </div>
     </div>`);
 
+    if (isEditMode) {
+      modal.querySelector('#ns_name').value = session.name || '';
+      modal.querySelector('#ns_type').value = session.typeCampagne || 'coran';
+      modal.querySelector('#ns_start').value = session.startDate || '';
+      modal.querySelector('#ns_end').value = session.endDate || '';
+      modal.querySelector('#ns_public').checked = !!session.isPublic;
+      modal.querySelector('#ns_type').disabled = true;
+    
+      if (Array.isArray(session.invitedEmails)) {
+        modal.querySelector('#ns_invited').value =
+          session.invitedEmails.join(', ');
+      }
+    }
+    
   // ----- Références DOM (TOUJOURS AVANT utilisation) -----
   const startDate = modal.querySelector("#ns_start");
   const endDate = modal.querySelector("#ns_end");
@@ -1516,9 +1780,17 @@ function openCreateSessionModal() {
         return;
       }
 
+
+      if (!isCampaignNameAllowed(name)) {
+        showModalFeedback("Le nom de la campagne contient des termes inappropriés.\n" +
+          "Merci de choisir un nom respectueux.", 'info');
+        return;
+      }
+      
+
       let formules = [];
 
-      if (typeCampagne === 'zikr') {
+      if (!isEditMode && typeCampagne === 'zikr') {
         modal.querySelectorAll('.zikr-formula').forEach(row => {
           const fname = row.querySelector('.zf-name').value.trim();
           const target = Number(row.querySelector('.zf-target').value);
@@ -1540,12 +1812,7 @@ function openCreateSessionModal() {
         : null;
       const start = startDate.value;
       const end = endDate.value;
-      /*
-      
-            const today = new Date().toISOString().split("T")[0];
-      
-            startDate.min = today;
-            endDate.min = today;*/
+
 
 
       if (!start || !end) {
@@ -1556,45 +1823,36 @@ function openCreateSessionModal() {
         return;
       }
 
-      /*startDate.addEventListener("change", () => {
-        endDate.min = startDate.value;
-      
-        if (endDate.value && endDate.value < startDate.value) {
-          endDate.value = startDate.value;
-        }
-      });
-      
-      const todayDate = new Date(today);
 
-      if (new Date(start) < todayDate || new Date(end) < todayDate) {
-        showModalFeedback(
-          "Les dates ne peuvent pas être antérieures à aujourd’hui",
-          "error"
+      let sessionId = null;
+
+      if (isEditMode) {
+         await updateDoc(
+          doc(db, SESSIONS_COLLECTION, session.id),
+          {
+            name,
+            startDate: start,
+            endDate: end,
+            isPublic,
+            invitedEmails: parseCSVemails(invitedInput.value),
+            updatedAt: serverTimestamp()
+          }
         );
-        return;
-      }*/
-      /*
-            if (new Date(end) < new Date(start)) {
-              showModalFeedback(
-                "La date de fin doit être postérieure à la date de début",
-                "error"
-              );
-              return;
-            }*/
+        sessionId = session.id; // 👈 CRUCIAL
+        showModalFeedback("Campagne mise à jour", "success");
+      } else {
+        sessionId = await createSession({
+          name,
+          typeCampagne,
+          startDate: start || null,
+          endDate: end || null,
+          isPublic,
+          invitedEmails: parseCSVemails(invitedInput.value),
+          inviteCode,
+          formules
+        });
+      }
 
-      //startDate.addEventListener("keydown", e => e.preventDefault());
-      //endDate.addEventListener("keydown", e => e.preventDefault());
-
-      const sessionId = await createSession({
-        name,
-        typeCampagne,
-        startDate: start || null,
-        endDate: end || null,
-        isPublic,
-        invitedEmails: parseCSVemails(invitedInput.value),
-        inviteCode,
-        formules
-      });
 
       closeModal(modal);
       await loadSessions();
@@ -1623,10 +1881,60 @@ function openCreateSessionModal() {
     }
   };
 
+  if (isEditMode && session.status === 'closed') {
+    modal.querySelector('#ns_create').disabled = true;
+  }
+  
   // ----- Annuler -----
   modal.querySelector('#ns_cancel').onclick = () => closeModal(modal);
 }
 
+document.getElementById('menuEdit').onclick = () => {
+  if (!requireAdmin(currentSession)) return;
+
+  if (currentSession.status === 'closed') {
+    showModalFeedback("Impossible de modifier une campagne clôturée", "info");
+    return;
+  }
+
+  openCreateSessionModal(currentSession);
+};
+
+document.getElementById('openPrivacyInfo').addEventListener('click', (e) => {
+  e.preventDefault();
+
+  openModal(`
+    <div class="modal-card card" style="max-width:520px">
+      <h3>Protection de vos données personnelles</h3>
+
+      <p>
+        Dans le cadre de l’utilisation de Together App, nous collectons et utilisons
+        certaines données personnelles nécessaires au bon fonctionnement du service,
+        notamment votre adresse e-mail, votre pseudo et votre mot de passe.
+      </p>
+
+      <p>
+        À terme, avec votre accord, des données de localisation pourront être utilisées
+        afin d’améliorer certaines fonctionnalités liées à la position géographique.
+      </p>
+
+      <p>
+        Vos données sont utilisées exclusivement dans le cadre de l’application,
+        ne sont ni revendues ni partagées à des tiers, et sont protégées conformément
+        à la réglementation en vigueur.
+      </p>
+
+      <hr style="margin:16px 0">
+
+      <button class="btn btn-success" id="closePrivacyModal">
+        J’ai compris
+      </button>
+    </div>
+  `);
+
+  document.getElementById('closePrivacyModal').onclick = () =>
+    document.querySelector('.modal')?.remove();
+});
 
 
 function showCoranCampaign(session) {
@@ -1652,15 +1960,6 @@ function showZikrCampaign(session) {
   const zikrView = document.getElementById('zikrView');
   zikrView.classList.remove('hidden');
 
-  //setupZikrInteractions();
-
-  // A REMPLACER PAR LE CADRE DE SELECTION VALIDATION ZIKR COMME LE MEME CAS QUE SUR LES JUZ
-  //document.getElementById('zikrMeta').innerHTML = `
-  //  <small>
-  //  📅 ${session.startDate} → ${session.endDate}
-  //  </small>
-  //`;
-  /////////////////////////////////////////////
 
   const colRef = collection(
     db,
@@ -1669,27 +1968,29 @@ function showZikrCampaign(session) {
     'formules'
   );
 
-
   const unsub = onSnapshot(colRef, snap => {
     const formules = snap.docs.map(d => ({
       id: d.id,
       ...d.data()
     }));
+  
+    // 📊 STATS ZIKR
+    const total = formules.length;
+    const finished = formules.filter(f =>
+      Number(f.objectif || 0) > 0 &&
+      Number(f.finished || 0) === Number(f.objectif || 0)
+    ).length;
+  
+    el.stats.textContent = `Terminés : ${finished} / ${total}`;
+  
     renderZikrFormulas(formules, session.id);
   });
+  
 
   // 🔥 IMPORTANT : enregistrer pour cleanup
   unsubscribers.push(unsub);
 }
 
-/*
-document.addEventListener("click", e => {
-  if (e.target.classList.contains("toggle-contribs")) {
-    const contribs = e.target.nextElementSibling;
-    contribs.classList.toggle("hidden");
-  }
-});
-*/
 
 function getZikrStatus(objectif, current, finished) {
   // Rien choisi
@@ -1711,19 +2012,6 @@ function getZikrStatus(objectif, current, finished) {
   return { key: 'assigned', label: 'en cours' };
 }
 
-/*
-function getZikrStatus(objectif, current, finished) {
-  if (!current || current === 0) {
-    return { key: 'free', label: 'disponible' };
-  }
-
-  if (finished >= objectif && objectif > 0) {
-    return { key: 'finished', label: 'terminé' };
-  }
-
-  return { key: 'assigned', label: 'en cours' };
-}
-*/
 async function renderZikrFormulas(formules, sessionId) {
   const container = document.getElementById('zikrFormulas');
   container.innerHTML = '';
@@ -1758,51 +2046,6 @@ async function renderZikrFormulas(formules, sessionId) {
       uid: d.id,        // 🔥 UID réel
       ...d.data()
     }));
-
-    /*
-    
-        const contributorsHtml = contributions.length
-          ? `
-          <table class="zikr-table zikr-contribs-table">
-            ${contributions.map(c => {
-            const isOwner = c.uid === auth.currentUser.uid;
-            const alreadyFinished = !!c.isFinished;
-    
-            return `
-                <tr class="zikr-contributor" data-uid="${c.uid}">
-                  <!-- Nom à gauche -->
-                  <td class="label contrib-name">
-                    ${c.pseudo}
-                  </td>
-      
-                  <!-- Valeur à droite -->
-                  <td class="value contrib-value">
-                    ${c.value}
-                  </td>
-      
-                  <!-- Actions à droite -->
-                  <td class="value contrib-actions">
-                    <button
-                      class="contrib-btn edit"
-                      data-action="edit"
-                      ${!isOwner || alreadyFinished ? 'disabled' : ''}
-                      title="${!isOwner ? '' : alreadyFinished ? '' : 'Modifier la contribution'}"
-                    >✏️</button>
-      
-                    <button
-                      class="contrib-btn finish"
-                      data-action="finish"
-                      ${!isOwner || alreadyFinished ? 'disabled' : ''}
-                      title="${alreadyFinished && isOwner ? 'Déjà terminé' : !isOwner ? '' : 'Marquer comme terminé'}"
-                    >✔️</button>
-                  </td>
-                </tr>
-              `;
-          }).join('')}
-          </table>
-        `
-          : `<em class="no-contrib">Aucun contributeur</em>`;
-    */
 
     const contributorsHtml = contributions.length
       ? `
@@ -1916,26 +2159,6 @@ async function renderZikrFormulas(formules, sessionId) {
 </div>
 `;
 
-
-    /*
-    
-        const input = card.querySelector('.zikr-input');
-        const validateBtn = card.querySelector('.zikr-validate-btn');
-    
-        validateBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-    
-          const value = Number(input.value);
-          if (!value || value <= 0) return;
-    
-          await validateZikrFormula(
-            currentSessionId,
-            f.id,
-            card
-          );
-    
-          input.value = '';
-        });*/
 
     const input = card.querySelector('.zikr-input');
     const validateBtn = card.querySelector('.zikr-validate-btn');
@@ -2128,119 +2351,6 @@ document.querySelectorAll('.auth-tab').forEach(tab => {
 
 
 //FIN
-
-
-/*
-async function validateZikrFormula(sessionId, formulaId, card) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const input = card.querySelector('.zikr-input');
-  const value = Number(input.value);
-
-  if (!value || value <= 0) {
-    showModalFeedback("❌ Entrez un nombre valide", "error");
-    return;
-  }
-
-  const formulaRef = doc(
-    db,
-    SESSIONS_COLLECTION,
-    sessionId,
-    'formules',
-    formulaId
-  );
-
-  const snap = await getDoc(formulaRef);
-
-  await setDoc(
-    doc(
-      db,
-      SESSIONS_COLLECTION,
-      sessionId,
-      'formules',
-      formulaId,
-      'contributions',
-      user.uid
-    ),
-    {
-      pseudo: user.displayName || 'Utilisateur',
-      value: increment(value),
-      isFinished: false, // 🔥 NOUVELLE CONTRIBUTION
-      updatedAt: serverTimestamp()
-    },
-    { merge: true }
-  );
-
-  
-  
-  if (!snap.exists()) return;
-
-  const data = snap.data();
-
-  const objectif = Number(data.objectif);
-  const current = Number(data.current || 0);
-  const reste = Number(data.reste ?? objectif - current);
-
-  // 🛑 FORMULE DÉJÀ TERMINÉE
-  if (reste <= 0) {
-    showModalFeedback("✅ Objectif déjà atteint", "error");
-    input.value = '';
-    return;
-  }
-
-  // 🛑 CONTRIBUTION TROP GRANDE
-  if (value > reste) {
-    showModalFeedback(
-      `❌ Vous ne pouvez pas dépasser le reste (${reste})`, "error"
-    );
-    return;
-  }
-
-  // ✅ CALCULS SÉCURISÉS
-  const newCurrent = current + value;
-  const newReste = objectif - newCurrent; // garanti >= 0
-
-  // 🔄 mise à jour formule
-  await updateDoc(formulaRef, {
-    current: newCurrent,
-    reste: newReste
-  });
-
-  // 🧠 contribution utilisateur (cumulée)
-  await setDoc(
-    doc(
-      db,
-      SESSIONS_COLLECTION,
-      sessionId,
-      'formules',
-      formulaId,
-      'contributions',
-      user.uid
-    ),
-    {
-      pseudo: user.displayName || 'Utilisateur',
-      value: increment(value),
-      updatedAt: serverTimestamp()
-    },
-    { merge: true }
-  );
-
-  // 🔓 débloque discussion
-  await setDoc(
-    doc(db, SESSIONS_COLLECTION, sessionId, 'zikrContributions', user.uid),
-    { hasContributed: true },
-    { merge: true }
-  );
-
-  input.value = '';
-  showModalFeedback(
-    newReste === 0
-      ? '🎉 Objectif atteint,'
-      : '✅ Contribution enregistrée'
-  ,"success");
-}
-*/
 
 async function validateZikrFormula(sessionId, formulaId, card) {
   const user = auth.currentUser;
@@ -2509,55 +2619,6 @@ document.getElementById("joinWithCodeBtn")
 
 
 
-/*
-document.addEventListener("click", async (e) => {
-  if (e.target.id !== "validateInviteCodeBtn") return;
-
-  const code = document.getElementById("inviteCodeInput").value.trim();
-  const errorBox = document.getElementById("inviteError");
-  const user = auth.currentUser;
-
-  if (!code) {
-    errorBox.textContent = "Veuillez entrer un code.";
-    return;
-  }
-
-  if (!user) {
-    errorBox.textContent = "Vous devez être connecté.";
-    return;
-  }
-
-  const q = query(collection(db, "sessions"), where("inviteCode", "==", code));
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    errorBox.textContent = "Code invalide.";
-    return;
-  }
-
-  const sessionDoc = snap.docs[0];
-  const sessionData = sessionDoc.data();
-
-  if (sessionData.invitedEmails?.includes(user.email)) {
-    errorBox.textContent = "Vous êtes déjà invité dans cette session.";
-    return;
-  }
-
-  await updateDoc(doc(db, "sessions", sessionDoc.id), {
-    invitedEmails: arrayUnion(user.email)
-  });
-
-  errorBox.style.color = "#27ae60";
-  errorBox.textContent = "Invitation acceptée 🎉";
-
-  setTimeout(() => {
-    loadSessions();
-    inviteModal.hidden = true;
-    inviteModal.innerHTML = "";
-  }, 1200);
-});
-
-*/
 searchInput.addEventListener("input", () => {
   const term = searchInput.value.toLowerCase();
 
@@ -2627,11 +2688,6 @@ window.addEventListener('scroll', () => {
 scrollTopBtn.addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
-
-// ⬇️ descendre
-/*scrollDownBtn.addEventListener('click', () => {
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-});*/
 
 
 
@@ -2809,6 +2865,43 @@ function openProfileCodeModal() {
   
 
 }
+
+
+function openConfirmModal({
+  title = "Confirmation",
+  message = "Êtes-vous sûr ?",
+  confirmText = "Confirmer",
+  cancelText = "Annuler",
+  danger = false,
+  onConfirm
+}) {
+  const modal = openModal(`
+    <div class="modal-card card">
+      <h3>${title}</h3>
+      <p style="margin-top:8px">${message}</p>
+
+      <hr style="margin:16px 0">
+
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button id="confirmOk" class="btn ${danger ? 'btn-danger' : 'btn-success'}">
+          ${confirmText}
+        </button>
+        <button id="confirmCancel" class="btn">
+          ${cancelText}
+        </button>
+      </div>
+    </div>
+  `);
+  
+
+  modal.querySelector('#confirmCancel').onclick = () => closeModal(modal);
+
+  modal.querySelector('#confirmOk').onclick = async () => {
+    closeModal(modal);
+    await onConfirm?.();
+  };
+}
+
 
 function refreshMenuUserAvatar(user) {
   const avatarImg = document.querySelector('#menuUserAvatar img');
