@@ -9,9 +9,14 @@
 
   /* Z-INDEX */
   --z-header: 100;
-  --z-bottom-bar: 200;
-  --z-scroll-btn: 300;
-  --z-modal: 1000;
+  --z-session-actions: 800;
+  --z-session-menu: 900;
+  --z-bottom-bar: 1000;
+  --z-scroll-btn: 1100;
+  --z-modal: 2000;
+  --z-modal-feedback: 3000;
+  --z-homeConnectBtn: 5000;
+
 
   --bottom-bar-height: 72px;
 }
@@ -649,13 +654,11 @@ main {
 
 
 #homeConnectBtn {
-  position: relative;
-  z-index: 9999;
+  position: fixed;
+  z-index: var(--z-homeConnectBtn);
+  pointer-events: auto;
 }
 
-#homeConnectBtn {
-  touch-action: manipulation;
-}
 
 
 .logout-icon {
@@ -1664,7 +1667,7 @@ input:disabled {
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
-  z-index: 9999;
+  z-index: var(--z-modal-feedback);
   color: #fff;
 }
 
@@ -1952,16 +1955,24 @@ textarea::placeholder {
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   padding: 6px 0;
-  z-index: 100;
+  z-index: var(--z-session-menu);
 }
 
 .session-menu.hidden {
   display: none;
+  pointer-events: none;   /* 🔥 bloque toute interception */
 }
+
+.session-actions {
+  position: absolute;   /* 🔥 limite le menu à cette zone */
+  z-index: var(--z-session-actions);
+}
+
+
 
 /* item */
 .menu-item {

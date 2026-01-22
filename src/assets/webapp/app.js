@@ -21,6 +21,8 @@ const btnLectures = document.getElementById("lectures");
 const btnHistorique = document.getElementById("historique");
 const campaignTitle = document.getElementById("campaignTitle");
 const profileEditionLink = document.getElementById("profileEdition");
+const menuUserAvatar = document.getElementById("menuUserAvatar");
+
 
 const filterButtons = [btnToutes, btnLectures, btnHistorique];
 
@@ -174,6 +176,13 @@ const sessionView = document.getElementById('sessionView');
       user.photoURL || 'default.jpg';
   
     await loadSessions();
+  });
+
+  menuUserAvatar?.addEventListener("click", (e) => {
+    e.preventDefault();
+    loadProfile();
+    openProfileCodeModal();
+  
   });
   
   // wire UI
