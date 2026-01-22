@@ -77,6 +77,8 @@ const el = {
 let allVisibleSessions = []; // cache 
 let currentFilter = "toutes";      // toutes | lectures | historique
 let currentTypeFilter = "coran";  // coran | zikr
+let unsubscribeMessages = null;
+
 
 //let currentSessionTab = "juz"; // "juz" | "discussion"
 const tabCoran = document.getElementById("tabCoran");
@@ -199,23 +201,7 @@ const sessionView = document.getElementById('sessionView');
     document.getElementById('shareBtn')?.click();
   };
 
-  document.getElementById('menuEdit').onclick = () => {
-    //openEditSessionModal(currentSession); // à créer si besoin
-  };
-  /*
-  document.getElementById('menuClose').onclick = () => {
-    document.getElementById('closeSessionBtn')?.click();
-  };*/
-/*
-  document.getElementById('menuDelete').onclick = async () => {
-    if (!confirm('Supprimer définitivement cette campagne ?')) return;
 
-    await deleteDoc(doc(db, SESSIONS_COLLECTION, currentSessionId));
-    showModalFeedback('Campagne supprimée');
-
-    sessionView.hidden = true;
-    await loadSessions();
-  };*/
 
   document.getElementById('menuDelete').onclick = () => {
 
@@ -253,12 +239,6 @@ tabCoran.onclick = () => {
 
   // Cacher
   sessionView.hidden = true;
-  // Affiche uniquement la grille Juz
-  //juzGrid.classList.remove("hidden");
-  // zikrGrid.classList.add("hidden");
-
-  // Affiche la barre de sélection Juz
-  //juzSelectionBar.classList.remove("hidden");
 
 
   // réinitialise les onglets internes
@@ -273,12 +253,10 @@ tabZikr.onclick = () => {
   tabCoran.classList.remove("active");
 
   // Affiche uniquement la grille Zikr
-  // Affiche uniquement la grille Zikr
   zikrGrid.classList.remove("hidden");
   juzGrid.classList.add("hidden");
 
   // Cache la barre de sélection Juz
-  //juzSelectionBar.classList.add("hidden");
   // réinitialise les onglets internes
   sessionView.hidden = true;
 
@@ -286,6 +264,39 @@ tabZikr.onclick = () => {
 };
 
 /* ---------- Helpers ---------- */
+async function refreshDiscussionAccess() {
+  if (!currentSession) return;
+
+  const canAccess = await userCanAccessDiscussion(currentSession);
+
+  if (canAccess) {
+    unlockDiscussion();
+  }
+}
+
+
+function lockDiscussion() {
+  el.discussionSection.classList.add('hidden');
+
+  const input = document.getElementById("messageInput");
+  const btn = document.getElementById("sendMessageBtn");
+
+  if (input) input.disabled = true;
+  if (btn) btn.disabled = true;
+}
+
+function unlockDiscussion() {
+  el.discussionSection.classList.remove('hidden');
+
+  const input = document.getElementById("messageInput");
+  const btn = document.getElementById("sendMessageBtn");
+
+  if (input) input.disabled = false;
+  if (btn) btn.disabled = false;
+
+  loadMessages(currentSessionId); // 🔥 CHARGÉ ICI SEULEMENT
+}
+
 
 function isCampaignNameAllowed(name) {
   if (!name) return false;
@@ -530,10 +541,6 @@ function parseCSVemails(text) {
 // Google
 
 
-
-
-
-
 // Inscription Email
 el.emailSignupBtn?.addEventListener('click', async () => {
   const email = el.emailInput.value.trim();
@@ -545,22 +552,6 @@ el.emailSignupBtn?.addEventListener('click', async () => {
     return showModalFeedback('Remplissez tous les champs', 'error');
   }
 
-
-  /*
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: pseudo });
-    await sendEmailVerification(cred.user);
-
-    showModalFeedback('Compte créé. Vérifiez votre email avant connexion.', 'success');
-    //showPage('home');
-  } catch (e) {
-    console.error(e.message);
-    if (e.message == 'Firebase: Error (auth/invalid-credential).')
-      showModalFeedback('Mot de passe incorrect', 'error');
-    if (e.message == 'Firebase: Error (auth/invalid-email).')
-      showModalFeedback('Email incorrect', 'error');
-  }*/
 
     try {
       // 🔒 Vérification consentement AVANT création du compte
@@ -940,13 +931,21 @@ let currentSession = null; // variable globale
 let unsubscribers = [];
 
 const sessionTitle = document.getElementById('sessionTitle');
-const sessionMeta = document.getElementById('sessionMeta');
 const stats = document.getElementById('stats');
 
 
-const menuShare = document.getElementById('menuShare');
-
 async function openSession(session) {
+
+  // 🔥 reset discussion
+if (unsubscribeMessages) {
+  unsubscribeMessages();
+  unsubscribeMessages = null;
+}
+
+const list = document.getElementById("messagesList");
+if (list) list.innerHTML = "";
+
+lockDiscussion(); // discussion cachée par défaut
 
   if (!session || !session.id) {
     throw new Error("openSession attend une session complète");
@@ -968,23 +967,17 @@ async function openSession(session) {
   const isAdmin = auth.currentUser.uid === meta.createdBy;
   const hasInviteCode = !!meta.inviteCode;
   const isClosed = meta.status === 'closed';
-  // Affiche l'entête
-  // sessionHeader.classList.remove('hidden');
   sessionTitle.textContent = meta.name;
 
   // Personnalisation selon type de campagne
   if (session.typeCampagne === 'zikr') {
-    // sessionTitle.textContent = 'Série de Zikr';
     stats.style.display = 'block'; // 👈 important
-    //closeBtn.textContent = 'Clôturer la série de Zikr';
 
     document.getElementById('sessionView').classList.remove('hidden');
     showZikrCampaign(session);
 
   } else {
-    //sessionTitle.textContent = 'Lecture Coran';
     stats.style.display = 'block';
-    //closeBtn.textContent = 'Clôturer la campagne';
 
     // Affiche uniquement la grille Juz
     document.getElementById('sessionView').classList.remove('hidden');
@@ -1018,19 +1011,16 @@ async function openSession(session) {
   }
 
 
-  // Afficher ou cacher bouton Clôturer selon statut
-  //closeBtn.style.display = (isAdmin && !isClosed) ? 'inline-block' : 'none';
-
-
   //User can Access Discussion
   const canAccessDiscussion = await userCanAccessDiscussion(session);
 
+
   if (canAccessDiscussion) {
-    enableDiscussion();
-    loadMessages(currentSessionId);
+    unlockDiscussion();
   } else {
-    disableDiscussion();
+    lockDiscussion();
   }
+  
 
 
 
@@ -1066,14 +1056,7 @@ async function openSession(session) {
   }, err => console.error('subcol snap err', err));
   unsubscribers.push(unsub);
 
-  // Scroll automatique vers le container
-  //sessionView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  //sessionTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-
-  // close session button visible only to admin
-  //const user = auth.currentUser;
-  //const isClosed = meta.status === 'closed';
   const allFinished = arr.every(j => j && j.status === 'finished');
 
   // Références
@@ -1091,6 +1074,16 @@ async function openSession(session) {
   ///
 
   document.getElementById("sendMessageBtn").onclick = async () => {
+
+        const canAccess = await userCanAccessDiscussion(currentSession);
+    if (!canAccess) {
+      showModalFeedback(
+        "Vous devez d’abord participer à la campagne pour écrire un message.",
+        "error"
+      );
+      return;
+    }
+
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
     if (!text) return;
@@ -1112,72 +1105,6 @@ async function openSession(session) {
     input.value = "";
   };
   // --- Campagne ouverte ---
-  /*
-  if (isAdmin && allFinished) {
-  
-    el.closeSessionBtn.onclick = () => {
-
-
-      openConfirmModal({
-        title: "Clôturer la campagne",
-        message: "Cette action est définitive. Voulez-vous vraiment clôturer cette campagne ?",
-        confirmText: "Clôturer",
-        danger: true,
-        onConfirm: async () => {
-          await updateDoc(
-            doc(db, SESSIONS_COLLECTION, currentSessionId),
-            {
-              status: 'closed',
-              closedAt: serverTimestamp()
-            }
-          );
-    
-          showModalFeedback("Campagne clôturée", "success");
-    
-          if (inviteBox) inviteBox.classList.add('is-closed');
-    
-          await loadSessions();
-        }
-      });
-    };
-    
-  } else {
-    // 🔒 admin only et pour des Campagnés Totalement Terminées
-    if (auth.currentUser.uid !== currentSession.createdBy) 
-      {
-        showModalFeedback("Action non autorisée", "error");
-        return;
-     }
-  }*/
-
-   /*  el.closeSessionBtn.onclick = () => {
-      if (!requireAdmin(currentSession)) return;
-    
-      if (!allFinished) {
-        showModalFeedback("La campagne n’est pas encore totalement terminée", "info");
-        return;
-      }
-    
-      openConfirmModal({
-        title: "Clôturer la campagne",
-        message: "Cette action est définitive.",
-        confirmText: "Clôturer",
-        danger: true,
-        onConfirm: async () => {
-          await updateDoc(
-            doc(db, SESSIONS_COLLECTION, currentSessionId),
-            {
-              status: 'closed',
-              closedAt: serverTimestamp()
-            }
-          );
-    
-          showModalFeedback("Campagne clôturée", "success");
-          await loadSessions();
-        }
-      });
-    };*/
-
     el.closeSessionBtn.onclick = async () => {
       if (!requireAdmin(currentSession)) return;
     
@@ -1585,6 +1512,8 @@ function renderGrid(juzData) {
           assignedAt: serverTimestamp()
         }
       );
+      await refreshDiscussionAccess();
+
     });
 
 
@@ -1946,11 +1875,25 @@ function showCoranCampaign(session) {
 function enableDiscussion() {
   el.discussionSection.classList.remove('hidden');
 
+  const input = document.getElementById("messageInput");
+  const btn = document.getElementById("sendMessageBtn");
+
+  if (input) input.disabled = false;
+  if (btn) btn.disabled = false;
 }
+
+
 
 function disableDiscussion() {
   el.discussionSection.classList.add('hidden');
+
+  const input = document.getElementById("messageInput");
+  const btn = document.getElementById("sendMessageBtn");
+
+  if (input) input.disabled = true;
+  if (btn) btn.disabled = true;
 }
+
 
 
 function showZikrCampaign(session) {
@@ -2460,6 +2403,8 @@ async function validateZikrFormula(sessionId, formulaId, card) {
     4000
   );
 
+  await refreshDiscussionAccess();
+
 }
 
 function showModalFeedback(
@@ -2599,8 +2544,6 @@ function openInviteCodeModal() {
       invitedEmails: arrayUnion(user.email)
     });
 
-    //errorBox.style.color = "#27ae60";
-    //errorBox.textContent = "Invitation acceptée 🎉";
 
     showModalFeedback("Invitation acceptée 🎉");
 
@@ -2677,8 +2620,6 @@ window.addEventListener('scroll', () => {
   const y = window.scrollY;
   const max = document.body.scrollHeight - window.innerHeight;
 
-  // bouton haut → visible si on n'est pas déjà en bas
-  // scrollDownBtn.style.display = y < max - 100 ? 'flex' : 'none';
 
   // bouton bas → visible si on a scrollé
   scrollTopBtn.style.display = y > 100 ? 'flex' : 'none';
@@ -2943,7 +2884,18 @@ function formatMessageDate(ts) {
   return `${weekday[d.getDay()]} ${d.toLocaleDateString('fr-FR', options)}`;
 }
 
-function loadMessages(sessionId) {
+
+async function loadMessages(sessionId) {
+
+  // 🔒 sécurité
+  if (!(await userCanAccessDiscussion(currentSession))) return;
+
+  // 🔥 nettoyer ancien listener
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
+  }
+
   const list = document.getElementById("messagesList");
   list.innerHTML = "";
 
@@ -2954,15 +2906,14 @@ function loadMessages(sessionId) {
 
   let lastDate = "";
 
-  onSnapshot(q, snap => {
+  unsubscribeMessages = onSnapshot(q, snap => {
     list.innerHTML = "";
     lastDate = "";
 
     snap.forEach(doc => {
       const m = doc.data();
-      const isCurrentUser = auth.currentUser && m.authorId === auth.currentUser.uid;
+      const isMe = auth.currentUser?.uid === m.authorId;
 
-      // Badge de date seulement si changement de jour
       const dateStr = formatMessageDate(m.createdAt);
       let dateBadge = "";
       if (dateStr !== lastDate) {
@@ -2971,19 +2922,23 @@ function loadMessages(sessionId) {
       }
 
       const div = document.createElement("div");
-      div.className = `message ${isCurrentUser ? "me" : "other"}`;
+      div.className = `message ${isMe ? "me" : "other"}`;
       div.innerHTML = `
         ${dateBadge}
         <div class="message-body">
-          ${!isCurrentUser ? `<img src="${m.photoURL || 'default.jpg'}" />` : ""}
+          ${!isMe ? `<img src="${m.photoURL || 'default.jpg'}">` : ""}
           <div class="message-content">
             <strong>${m.authorPseudo}</strong>
             <div class="message-text">${m.text}</div>
-            <small class="message-time">${m.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+            <small class="message-time">
+              ${m.createdAt?.toDate().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </small>
           </div>
         </div>
       `;
-
       list.appendChild(div);
     });
 
@@ -3060,15 +3015,25 @@ function initSessionTabs(session) {
     tabDiscussion.classList.remove("active");
   };
 
-  tabDiscussion.onclick = () => {
+
+  tabDiscussion.onclick = async () => {
+
+    // 🔒 vérification accès
+    const canAccess = await userCanAccessDiscussion(currentSession);
+    if (!canAccess) return;
+  
     discussion.classList.remove("hidden");
     grid.classList.add("hidden");
     zikrView.classList.add("hidden");
-
+  
     tabDiscussion.classList.add("active");
     tabJuz.classList.remove("active");
     tabFormula.classList.remove("active");
+  
+    // 🔄 charger messages AU MOMENT DU CLIC
+    await loadMessages(currentSession.id);
   };
+  
 }
 
 
