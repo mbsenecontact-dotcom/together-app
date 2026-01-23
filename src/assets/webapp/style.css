@@ -2171,3 +2171,197 @@ textarea::placeholder {
   border-radius: 8px;
   font-weight: 600;
 }
+
+
+.pub-body {
+  flex: 1;
+  padding: 18px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pub-body h4 {
+  font-size: 1.4rem;
+}
+
+.pub-body p {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #444;
+}
+
+.pub-body .btn {
+  margin-top: auto;      /* 🔥 pousse le bouton en bas */
+  text-align: center;
+}
+
+.pub-carousel {
+  display: flex;
+  gap: 12px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 12px 6px;
+}
+
+/* cacher scrollbar */
+.pub-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.pub-card {
+  flex: 0 0 85vw;
+  max-width: 420px;
+
+  min-height: 80vh;              /* 🔥 hauteur importante */
+  max-height: 90vh;
+
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+
+  box-shadow: 0 8px 22px rgba(0,0,0,0.15);
+
+  display: flex;
+  flex-direction: column;
+
+  scroll-snap-align: center;
+}
+
+
+/* image */
+.pub-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  min-height: 75vh;        /* 🔥 carte plus haute */
+  max-height: 85vh;        /* évite de dépasser l’écran */
+}
+
+@media (min-width: 768px) {
+  .pub-card {
+    flex: 0 0 45%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pub-card {
+    flex: 0 0 30%;
+  }
+}
+
+.pub-card:active {
+  transform: scale(0.97);
+}
+
+.pub-image {
+  height: 45%;
+  width: 100%;
+}
+
+.pub-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pub-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+
+/* ===== UTILITAIRE (copie logique de Publicité) ===== */
+
+
+.util-carousel {
+  display: flex;
+  gap: 12px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 12px 6px;
+}
+
+/* cacher scrollbar */
+.util-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+
+
+
+
+.util-card {
+  flex: 0 0 85vw;
+  max-width: 420px;
+
+  min-height: 80vh;              /* 🔥 hauteur importante */
+  max-height: 90vh;
+
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+
+  box-shadow: 0 8px 22px rgba(0,0,0,0.15);
+
+  display: flex;
+  flex-direction: column;
+
+  scroll-snap-align: center;
+}
+
+
+/* image */
+.util-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  min-height: 75vh;        /* 🔥 carte plus haute */
+  max-height: 85vh;        /* évite de dépasser l’écran */
+}
+
+@media (min-width: 768px) {
+  .util-card {
+    flex: 0 0 45%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .util-card {
+    flex: 0 0 30%;
+  }
+}
+
+.util-card:active {
+  transform: scale(0.97);
+}
+
+.util-image {
+  height: 45%;
+  width: 100%;
+}
+
+.util-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.util-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}

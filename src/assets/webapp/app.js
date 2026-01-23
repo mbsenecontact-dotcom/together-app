@@ -25,6 +25,137 @@ const menuUserAvatar = document.getElementById("menuUserAvatar");
 
 
 const filterButtons = [btnToutes, btnLectures, btnHistorique];
+/*
+const PUBLICITE_DATA = {
+  projets: [
+    {
+      title: "Soutien à une Mosquée",
+      description: "Participez à la rénovation d’une mosquée locale.",
+      link: "https://www.helloasso.com/",
+      cta: "Faire un don"
+    },
+    {
+      title: "Aide humanitaire",
+      description: "Soutien alimentaire pour familles démunies.",
+      link: "https://www.helloasso.com/",
+      cta: "Contribuer"
+    }
+  ],
+
+  ventes: [
+    {
+      title: "Livres Islamiques",
+      description: "Sélection de livres via Amazon (affiliation).",
+      link: "https://www.amazon.fr/",
+      cta: "Voir les produits"
+    }
+  ],
+
+  entreprises: [
+    {
+      title: "Western Union",
+      description: "Transferts d’argent internationaux rapides."
+    },
+    {
+      title: "RIA",
+      description: "Service de transfert d’argent sécurisé."
+    },
+    {
+      title: "Taptap Send",
+      description: "Envoi d’argent sans frais vers l’Afrique."
+    }
+  ]
+};
+*/
+
+const UTILITAIRE_DATA = {
+  prieres: [
+    {
+      title: "Invocation de clôture",
+      description: "Doua à réciter en fin d’assemblée.",
+      pdf: "assets/pdf/priere-fermeture.pdf"
+    },
+    {
+      title: "Doua de fin de lecture",
+      description: "Invocation après lecture du Coran.",
+      pdf: "assets/pdf/doua-fin-coran.pdf"
+    }
+  ],
+
+  coran: [
+    {
+      title: "Juz Amma",
+      description: "Dernière partie du Coran (Juz 30).",
+      pdf: "assets/pdf/juz-30.pdf"
+    },
+    {
+      title: "Juz Tabarak",
+      description: "Partie 29 du Coran.",
+      pdf: "assets/pdf/juz-29.pdf"
+    }
+  ],
+
+  zikr: [
+    {
+      title: "Zikr du matin",
+      description: "Formules à réciter après Fajr.",
+      pdf: "assets/pdf/zikr-matin.pdf"
+    },
+    {
+      title: "Zikr du soir",
+      description: "Protection et rappel d’Allah.",
+      pdf: "assets/pdf/zikr-soir.pdf"
+    }
+  ]
+};
+
+const PUBLICITE_DATA = {
+  projets: [
+    {
+      title: "Soutien à une Mosquée",
+      description: "Participez à la rénovation d’une mosquée locale.",
+      link: "https://www.helloasso.com/associations/association-socioculturelle-cheikh-seydi-hadji-malick-sy-la-zawiya/formulaires/1",
+      cta: "Faire un don",
+      image: "/assets/pub/projetZawiyaParis.jpg"
+    },
+    {
+      title: "Aide humanitaire",
+      description: "Soutien alimentaire pour familles démunies.",
+      link: "https://www.helloasso.com/associations/association-pour-la-mutualite-et-la-diversite-de-tours/collectes/projet-zawiya-a-tours",
+      cta: "Contribuer",
+      image: "/assets/pub/projetZawiyaTours.png"
+    }
+  ],
+
+  ventes: [
+    {
+      title: "Livres Islamiques",
+      description: "Sélection de livres via Amazon (affiliation).",
+      link: "https://www.amazon.fr/s?k=coran",
+      cta: "Voir les produits",
+      image: "/assets/pub/livres.jpg"
+    }
+  ],
+
+  partenaires: [
+    {
+      title: "Taptap Send",
+      description: "Envoi d’argent sans frais vers l’Afrique.",
+      image: "/assets/pub/taptap.jpg"
+    },
+    {
+      title: "Western Union",
+      description: "Transferts d’argent internationaux rapides.",
+      image: "/assets/pub/western-union.jpg"
+    },
+    {
+      title: "RIA",
+      description: "Service de transfert d’argent sécurisé.",
+      image: "/assets/pub/ria.jpg"
+    }
+  ]
+};
+
 
 const FORBIDDEN_WORDS = [
   // insultes générales
@@ -87,8 +218,6 @@ const tabCoran = document.getElementById("tabCoran");
 const tabZikr = document.getElementById("tabZikr");
 const juzGrid = document.getElementById('grid');      // grille Juz dans sessionView
 const zikrGrid = document.getElementById('zikrView'); // grille Zikr
-const juzSelectionBar = document.getElementById('juzSelectionBar'); // si tu veux aussi cacher pour Zikr
-
 const sessionView = document.getElementById('sessionView');
 
 
@@ -509,7 +638,7 @@ function shareSessionInvite(meta) {
 function showSessionsPage() {
   document.getElementById('sessionsList').hidden = false;
   document.getElementById('sessionView').hidden = true;
-
+  hideBackBtn();          // 🔥
   // optionnel : reset scroll
   window.scrollTo({ top: 0 });
 }
@@ -925,10 +1054,45 @@ function renderSessions(list) {
     el.sessionsDiv.appendChild(row);
   });
 }
-
+/*
 document.getElementById('backToSessionsBtn').addEventListener('click', () => {
   showSessionsPage();
 });
+
+*/
+
+document.getElementById('backToSessionsBtn')
+  .addEventListener('click', () => {
+    showPage('dashboard');   // 🔥 retour vers Campagnes
+    showSessionsPage();      // affiche la liste
+  });
+
+
+  const globalBackBtn = document.getElementById("globalBackBtn");
+  const utilitaireBackBtn = document.getElementById("utilitaireBackBtn");
+
+  
+function showBackBtn() {
+  globalBackBtn.classList.remove("hidden");
+  utilitaireBackBtn.classList.remove("hidden");
+}
+
+function hideBackBtn() {
+  globalBackBtn.classList.add("hidden");
+  utilitaireBackBtn.classList.add("hidden");
+}
+
+globalBackBtn.onclick = () => {
+  showPage("dashboard");
+  showSessionsPage(); 
+  hideBackBtn();
+};
+
+utilitaireBackBtn.onclick = () => {
+  showPage("dashboard");
+  showSessionsPage(); 
+  hideBackBtn();
+};
 
 
 /**
@@ -2614,6 +2778,216 @@ btnHistorique.addEventListener("click", () => { setActiveFilter(btnHistorique); 
 setActiveFilter(btnToutes);
 
 
+/// PUB
+/*
+document.getElementById("publicite").addEventListener("click", () => {
+  showPage("publicitePage");
+  renderPublicite("projets");
+});*/
+
+document.getElementById("publicite").addEventListener("click", () => {
+  showPage("publicitePage");
+  showBackBtn();          // 🔥
+  renderPublicite("projets");
+});
+
+
+document.getElementById("utilitaire").addEventListener("click", () => {
+  showPage("utilitairePage");
+  showBackBtn();          // 🔥
+  renderUtilitaire("prieres");
+});
+
+const tabProjets = document.getElementById("tabProjets");
+const tabVentes = document.getElementById("tabVentes");
+const tabPartenaires = document.getElementById("tabPartenaires");
+
+[tabProjets, tabVentes, tabPartenaires].forEach(tab => {
+  tab.addEventListener("click", () => {
+    [tabProjets, tabVentes, tabPartenaires].forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    if (tab === tabProjets) renderPublicite("projets");
+    if (tab === tabVentes) renderPublicite("ventes");
+    if (tab === tabPartenaires) renderPublicite("partenaires");
+  });
+});
+
+/*
+function renderPublicite(type) {
+  const container = document.getElementById("publiciteContent");
+  container.innerHTML = "";
+
+  const data = PUBLICITE_DATA[type] || [];
+
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state">Aucun contenu disponible</div>`;
+    return;
+  }
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <h4>${item.title}</h4>
+      <p>${item.description}</p>
+
+      ${
+        item.link
+          ? `<a href="${item.link}" target="_blank" class="btn btn-success">
+              ${item.cta || "Voir"}
+            </a>`
+          : ""
+      }
+    `;
+
+    container.appendChild(card);
+  });
+}*/
+/*
+function renderPublicite(type) {
+  const container = document.getElementById("publiciteContent");
+  container.innerHTML = "";
+
+  const data = PUBLICITE_DATA[type] || [];
+
+  if (!data.length) {
+    container.innerHTML = `
+      <div class="empty-state">Aucun contenu disponible</div>
+    `;
+    return;
+  }
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "pub-card";
+
+    card.innerHTML = `
+      <h4>${item.title}</h4>
+      <p>${item.description}</p>
+
+      ${
+        item.link
+          ? `<a href="${item.link}"
+               target="_blank"
+               class="btn btn-success">
+               ${item.cta || "Voir"}
+             </a>`
+          : ""
+      }
+    `;
+
+    container.appendChild(card);
+  });
+
+  // 🔥 reset scroll à gauche à chaque changement d’onglet
+  container.scrollTo({ left: 0, behavior: "instant" });
+}
+*/
+
+function renderPublicite(type) {
+  const container = document.getElementById("publiciteContent");
+  container.innerHTML = "";
+
+  const data = PUBLICITE_DATA[type] || [];
+
+  if (!data.length) {
+    container.innerHTML = `
+      <div class="empty-state">Aucun contenu disponible</div>
+    `;
+    return;
+  }
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "pub-card";
+
+    card.innerHTML = `
+      ${item.image ? `
+        <div class="pub-image">
+          <img src="${item.image}" alt="${item.title}">
+        </div>
+      ` : ""}
+
+      <div class="pub-body">
+        <h4>${item.title}</h4>
+        <p>${item.description}</p>
+
+        ${
+          item.link
+            ? `<a href="${item.link}"
+                 target="_blank"
+                 class="btn btn-success">
+                 ${item.cta || "Voir"}
+               </a>`
+            : ""
+        }
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  // 🔥 reset scroll à gauche à chaque changement d’onglet
+  container.scrollTo({ left: 0, behavior: "instant" });
+}
+
+
+
+/// FIN PUB
+
+//UTILITAIRE
+
+function renderUtilitaire(type) {
+  const container = document.getElementById("utilitaireContent");
+  container.innerHTML = "";
+
+  const data = UTILITAIRE_DATA[type] || [];
+
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state">Aucun contenu disponible</div>`;
+    return;
+  }
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "util-card";
+
+    card.innerHTML = `
+      <div class="util-body">
+        <h4>${item.title}</h4>
+        <p>${item.description}</p>
+
+        <a href="${item.pdf}" 
+           target="_blank"
+           class="btn btn-primary">
+           Ouvrir le document
+        </a>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  container.scrollTo({ left: 0, behavior: "instant" });
+}
+
+document.querySelectorAll(".util-tabs .tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document
+      .querySelectorAll(".util-tabs .tab-btn")
+      .forEach(b => b.classList.remove("active"));
+
+    btn.classList.add("active");
+    renderUtilitaire(btn.dataset.type);
+  });
+});
+
+// Chargement initial
+renderUtilitaire("prieres");
+
+//FIN UTILITAIRE 
 
 function refreshGrid() {
   //el.sessionView.style.display = 'none';

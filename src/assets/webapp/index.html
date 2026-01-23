@@ -49,6 +49,8 @@
   </header>
 
   <main id="main">
+
+
     <section id="home" class="page">
       <div class="home-card">
         <h2>Bienvenue sur Together App</h2>
@@ -145,6 +147,7 @@
           <button id="toutes" class="tab-btn active">Toutes</button>
           <button id="lectures" class="tab-btn">Lectures</button>
           <button id="historique" class="tab-btn">Historique</button>
+          <button id="utilitaire" class="tab-btn">Utilitaire</button>
           <button id="publicite" class="tab-btn">Publicité</button>
         </div>
 
@@ -248,7 +251,47 @@
         
       </div>
     </section>
+    <section id="publicitePage" class="page" hidden>
+      <div class="card">
+              <button id="globalBackBtn" class="back-btn hidden"><i class="fa-solid fa-arrow-left"></i>Campagnes</button>
+        <div class="campagne-header">
+          <h3>Publicité & Partenariats</h3>
+        </div>
+    
+        <!-- Onglets -->
+        <div class="pub-tabs">
+          <button id="tabProjets" class="tab-btn active">Projets</button>
+          <button id="tabVentes" class="tab-btn">Ventes</button>
+          <button id="tabPartenaires" class="tab-btn">Partenaires</button>
+        </div>
+    
+        <!-- Contenu -->
+        <div id="publiciteContent" class="pub-carousel"></div>
 
+    
+      </div>
+    
+    </section>
+    <section id="utilitairePage" class="page" hidden>
+      <div class="card">
+        <button id="utilitaireBackBtn" class="back-btn hidden"><i class="fa-solid fa-arrow-left"></i>Campagnes</button>
+        <div class="campagne-header">
+          <h3>Utilitaire</h3>
+        </div>
+        <!-- Onglets -->
+        <div class="util-tabs">
+          <button class="tab-btn active" data-type="prieres">Fermeture</button>
+          <button class="tab-btn" data-type="coran">Parties</button>
+          <button class="tab-btn" data-type="zikr">Formules</button>
+        </div>
+      
+        <!-- Carousel horizontal -->
+
+          <div id="utilitaireContent" class="pub-carousel"></div>
+
+    </div>
+    </section>
+    
     <button
       id="scrollTopBtn"
       class="scroll-btn scroll-btn-bottom"
