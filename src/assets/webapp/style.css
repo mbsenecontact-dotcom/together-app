@@ -2277,6 +2277,50 @@ textarea::placeholder {
   margin: 12px 0;
 }
 
+#publiciteContent {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 12px;
+}
+
+
+.pub-card-wa {
+  width: 260px;
+  height: 420px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  position: relative;
+  scroll-snap-align: start;
+}
+
+/* image */
+.pub-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* overlay texte */
+.pub-overlay-text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  background: linear-gradient(
+    transparent,
+    rgba(0,0,0,0.75)
+  );
+}
 
 /* ===== UTILITAIRE (copie logique de Publicité) ===== */
 

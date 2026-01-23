@@ -2886,6 +2886,7 @@ function renderPublicite(type) {
 }
 */
 
+/*
 function renderPublicite(type) {
   const container = document.getElementById("publiciteContent");
   container.innerHTML = "";
@@ -2932,7 +2933,33 @@ function renderPublicite(type) {
   // 🔥 reset scroll à gauche à chaque changement d’onglet
   container.scrollTo({ left: 0, behavior: "instant" });
 }
+*/
+function renderPublicite(type) {
+  const container = document.getElementById("publiciteContent");
+  container.innerHTML = "";
 
+  const data = PUBLICITE_DATA[type] || [];
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "pub-card-wa";
+
+    card.innerHTML = `
+      <div class="pub-img-wrapper">
+        <img src="${item.image}" alt="${item.title}">
+        <div class="pub-overlay-text">
+          ${item.description}
+        </div>
+      </div>
+    `;
+
+    card.onclick = () => {
+      if (item.link) window.open(item.link, "_blank");
+    };
+
+    container.appendChild(card);
+  });
+}
 
 
 /// FIN PUB
