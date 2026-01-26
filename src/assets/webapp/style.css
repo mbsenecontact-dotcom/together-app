@@ -1,4 +1,6 @@
-:root {
+:root {  
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
   --bg: #fafafa;
   --card: #fff;
   --muted: #777;
@@ -18,7 +20,7 @@
   --z-homeConnectBtn: 5000;
 
 
-  --bottom-bar-height: 72px;
+  --bottom-bar-height: 90px;
 }
 
 * {
@@ -37,7 +39,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #fff;
+  background: MEDIUMSEAGREEN;
   border-bottom: 1px solid #eee;
   position: sticky;
   top: 0;
@@ -239,6 +241,7 @@ body {
 }
 
 
+
 .juz.free {
   background: #A5D6A7
 }
@@ -272,9 +275,36 @@ body.menu-open .header ~ main {
   user-select: none
 }
 
+body.modal-open main {
+  pointer-events: none;
+  user-select: none;
+  filter: blur(0.6px);
+}
 
+
+body.modal-open {
+  overflow: auto;
+}
+
+
+.modal {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/*
 main {
   padding-bottom: var(--bottom-bar-height);
+
+/* Assure que le contenu principal ne soit pas caché 
+main, #discussionSection {
+  padding-bottom: calc(var(--bottom-bar-height) + 80px); /* formulaire + marge }
+*/
+
+main, #discussionSection {
+  padding-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom));
 }
 
 
@@ -629,7 +659,7 @@ main {
 .bottom-btn {
   flex: 1;
   padding: 8px 0 10px;
-  background: none;
+  background: MEDIUMSEAGREEN;
   border: none;
   display: flex;
   flex-direction: column;
@@ -642,7 +672,8 @@ main {
   pointer-events: auto;
   touch-action: manipulation;
   position: fixed;
-  bottom: 0;
+  bottom: 0; /* ou 8–16px bottom: env(safe-area-inset-bottom); */
+  padding-bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
   display: flex;
@@ -724,7 +755,7 @@ main {
 
 
 .label {
-  font-size: 12px;
+  font-size: 18px;
   color: #333;
 }
 
@@ -1820,11 +1851,6 @@ input:disabled {
   border-top: 1px solid #eee;
   background: #fff;
   z-index: calc(var(--z-bottom-bar) + 1); /* au-dessus de la barre */
-}
-
-/* Assure que le contenu principal ne soit pas caché */
-main, #discussionSection {
-  padding-bottom: calc(var(--bottom-bar-height) + 80px); /* formulaire + marge */
 }
 
 

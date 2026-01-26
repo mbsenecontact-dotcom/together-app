@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>ReadTogether | Unir nos lectures</title>
   <link rel="stylesheet" href="style.css" />
   <link
@@ -28,12 +28,9 @@
     <nav class="header-right">
       <select id="languageSelect" class="lang-select">
         <option value="fr" data-flag="🇫🇷">🇫🇷 Français</option>
-
-        <!-- Wolof → Sénégal 
         <option value="wo" data-flag="🇸🇳">🇸🇳 Wolof</option>
-        
         <option value="en" data-flag="🇬🇧">🇬🇧 Anglais</option>
-        
+        <!--
         <option value="ar" data-flag="🇸🇦">🇸🇦 Arabe</option>
         <option value="es" data-flag="🇪🇸">🇪🇸 Espagnol</option>
         <option value="pt" data-flag="🇵🇹">🇵🇹 Portugais</option>
@@ -50,84 +47,67 @@
 
   <main id="main">
 
-
     <section id="home" class="page">
-      <div class="home-card">
+
+      <!-- Carte d’accueil -->
+      <div class="home-card" id="homeCard">
         <h2>Bienvenue sur Together App</h2>
         <p>
           Rassemblons nos cœurs autour du zikr.
           Partagez la lecture des 30 Juz et accomplissez
           des formules de zikr ensemble, où que vous soyez.
         </p>
-
-        <button id="homeConnectBtn" class="btn btn-primary" aria-haspopup="true">Se connecter</button>
-      </div>
-    </section>
-
     
-
-    <section id="authPage" class="page card" hidden>
-      <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="loginPanel">Se connecter</button>
-        <button class="auth-tab" data-tab="signupPanel">S'inscrire</button>
-      </div>
-    
-      <!-- Connexion -->
-      <div id="loginPanel" class="auth-panel active">
-        <div class="card">
-          <h3>Connexion Email</h3>
-          <input id="emailInput" type="email" placeholder="Adresse email" />
-          <input id="passwordInput" type="password" placeholder="Mot de passe" />
-          <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
-          <p class="center"><a id="forgotPassword" href="#">Mot de passe oublié ?</a></p>
-          <!-- Feedback ici -->
-          <div id="loginFeedback" class="auth-feedback"></div>
-        </div>
-      </div>
-    
-      <!-- Inscription -->
-       
-      <!-- Feedback ici 
-      <div id="signupPanel" class="auth-panel">
-        <div class="card">
-          <h3>Créer un compte</h3>
-          <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
-          <input id="signupEmailInput" type="email" placeholder="Adresse email" />
-          <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
-          <button id="emailSignupBtn" class="btn btn-primary">Créer un compte</button>
-          
-          <div id="signupFeedback" class="auth-feedback"></div>
-        </div>
-      </div>-->
-      
-      <div id="signupPanel" class="auth-panel">
-        <div class="card">
-          <h3>Créer un compte</h3>
-      
-          <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
-          <input id="signupEmailInput" type="email" placeholder="Adresse email" />
-          <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
-      
-          <!-- ✅ Consentement -->
-          <label class="consent-checkbox" style="margin:12px 0;display:block">
-            <input type="checkbox" id="consentCheckbox" />
-            <span>
-              J’accepte la collecte et l’utilisation de mes données personnelles.
-              <a href="#" id="openPrivacyInfo">Vos données personnelles</a>
-            </span>
-          </label>
-      
-          <button id="emailSignupBtn" class="btn btn-primary">
-            Créer un compte
-          </button>
-      
-          <div id="signupFeedback" class="auth-feedback"></div>
-        </div>
-      </div>
-      
-
-    </section>
   
+      </div>
+    
+      <!-- Authentification -->
+      <div id="authPage" class="card">
+    
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="loginPanel">Se connecter</button>
+          <button class="auth-tab" data-tab="signupPanel">S'inscrire</button>
+        </div>
+    
+        <!-- Connexion -->
+        <div id="loginPanel" class="auth-panel active">
+          <div class="card">
+            <h3>Connexion Email</h3>
+            <input id="emailInput" type="email" placeholder="Adresse email" />
+            <input id="passwordInput" type="password" placeholder="Mot de passe" />
+            <button id="emailLoginBtn" class="btn btn-success">Connexion</button>
+            <p class="center">
+              <a id="forgotPassword" href="#">Mot de passe oublié ?</a>
+            </p>
+          </div>
+        </div>
+    
+        <!-- Inscription -->
+        <div id="signupPanel" class="auth-panel">
+          <div class="card">
+            <h3>Créer un compte</h3>
+    
+            <input id="pseudoInput" type="text" placeholder="Pseudo (obligatoire)" />
+            <input id="signupEmailInput" type="email" placeholder="Adresse email" />
+            <input id="signupPasswordInput" type="password" placeholder="Mot de passe" />
+    
+            <label class="consent-checkbox" style="margin:12px 0;display:block">
+              <input type="checkbox" id="consentCheckbox" />
+              <span>
+                J’accepte la collecte et l’utilisation de mes données personnelles.
+                <a href="#" id="openPrivacyInfo">Vos données personnelles</a>
+              </span>
+            </label>
+    
+            <button id="emailSignupBtn" class="btn btn-primary">
+              Créer un compte
+            </button>
+          </div>
+        </div>
+    
+      </div>
+    </section>
+    
   
     <section id="dashboard" class="page" hidden>
       <div id="sessionsList" class="card">
@@ -324,7 +304,7 @@
       <span class="icon-circle">
         <i class="fa-solid fa-gear icon"></i>
       </span>
-      <span class="label">Utilitaire</span>
+      <span class="label">Paramètre</span>
     </button>
 
   </div>

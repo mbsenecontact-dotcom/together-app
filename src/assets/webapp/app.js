@@ -186,7 +186,7 @@ const el = {
   emailSignupBtn: document.getElementById('emailSignupBtn'),
   //googleLogin: document.getElementById('googleLogin'),
   forgotPassword: document.getElementById('forgotPassword'),
-  authPage: document.getElementById('authPage'),
+  //authPage: document.getElementById('authPage'),
   home: document.getElementById('home'),
   dashboard: document.getElementById('dashboard'),
   sessionView: document.getElementById('sessionView'),
@@ -235,7 +235,7 @@ const sessionView = document.getElementById('sessionView');
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
 
-  setupNetworkWatcher();
+  //setupNetworkWatcher();
 
 
   onAuthStateChanged(auth, async (user) => {
@@ -275,7 +275,7 @@ const sessionView = document.getElementById('sessionView');
        ===================================================== */
   
     showPage('dashboard');
-    document.getElementById('homeConnectBtn').style.display = 'none';
+    //document.getElementById('homeConnectBtn').style.display = 'none';
     showBottomBar();
   
     let pseudo = user.displayName;
@@ -315,7 +315,16 @@ const sessionView = document.getElementById('sessionView');
   });
   
   // wire UI
-  document.getElementById('homeConnectBtn').addEventListener('click', () => showPage('authPage'));
+  //document.getElementById('homeConnectBtn').addEventListener('click', () => showPage('authPage'));
+
+  /*
+  document.getElementById("homeConnectBtn").addEventListener("click", () => {
+    document.getElementById("homeCard").hidden = true;
+    document.getElementById("authPage").hidden = false;
+  });*/
+
+
+
   el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
 
   const menuBtn = document.getElementById('sessionMenuBtn');
@@ -544,73 +553,65 @@ function requireAdmin(session) {
   return true;
 }
 
+/*
 
+async function hasRealInternet(timeout = 4000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
 
-async function hasRealInternet() {
   try {
-    const controller = new AbortController();
-    setTimeout(() => controller.abort(), 4000);
+    const res = await fetch('https://www.google.com/favicon.ico', {
+      method: 'GET',
+      cache: 'no-store',
+      signal: controller.signal,
+    });
 
-    const res = await fetch(
-      'https://www.gstatic.com/generate_204',
-      {
-        method: 'GET',
-        cache: 'no-store',
-        signal: controller.signal
-      }
-    );
-
-    return res && res.status === 204;
-  } catch {
+    return res.ok;
+  } catch (e) {
     return false;
+  } finally {
+    clearTimeout(id);
   }
 }
-
 
 function setupNetworkWatcher() {
   let lastStatus = null;
+  let checking = false;
 
   async function check() {
+    if (checking) return;
+    checking = true;
+
     const online = await hasRealInternet();
-    
-    console.log('On line : '+online);
-    if (online === lastStatus) return;
-    lastStatus = online;
+    console.log('Online:', online);
 
+    if (online !== lastStatus) {
+      lastStatus = online;
 
-    console.log('Last Status : '+lastStatus);
-    if (!online) {
-      showModalFeedback(
-        'Connexion internet perdue. Certaines actions sont suspendues.',
-        'system'
-      );
-    } else {
-      showModalFeedback(
-        'Connexion internet rétablie ✅',
-        'success'
-      );
+      if (!online) {
+        showModalFeedback(
+          'Connexion internet perdue. Certaines actions sont suspendues.',
+          'system'
+        );
+      } else {
+        showModalFeedback(
+          'Connexion internet rétablie ✅',
+          'success'
+        );
+      }
     }
+
+    checking = false;
   }
 
-  // écoute navigateur (rapide)
   window.addEventListener('online', check);
   window.addEventListener('offline', check);
 
-  // vérification active (tablette safe)
   setInterval(check, 5000);
 
-  // état initial
-  check();
+  check(); // état initial
 }
-
-
-async function requireInternet() {
-  const ok = await hasRealInternet();
-  if (!ok) {
-    showModalFeedback('Connexion internet requise', 'error');
-  }
-  return ok;
-}
+*/
 
 
 function shareSessionInvite(meta) {
@@ -2005,7 +2006,7 @@ document.getElementById('menuEdit').onclick = () => {
 document.getElementById('openPrivacyInfo').addEventListener('click', (e) => {
   e.preventDefault();
 
-  openModal(`
+ const modal = openModal(`
     <div class="modal-card card" style="max-width:520px">
       <h3>Protection de vos données personnelles</h3>
 
@@ -2034,9 +2035,11 @@ document.getElementById('openPrivacyInfo').addEventListener('click', (e) => {
     </div>
   `);
 
-  document.getElementById('closePrivacyModal').onclick = () =>
-    document.querySelector('.modal')?.remove();
+
+  modal.querySelector('#closePrivacyModal').onclick = () => closeModal(modal);
 });
+
+
 
 
 function showCoranCampaign(session) {
@@ -2045,27 +2048,6 @@ function showCoranCampaign(session) {
   document.getElementById('zikrView').classList.add('hidden');
 }
 
-function enableDiscussion() {
-  el.discussionSection.classList.remove('hidden');
-
-  const input = document.getElementById("messageInput");
-  const btn = document.getElementById("sendMessageBtn");
-
-  if (input) input.disabled = false;
-  if (btn) btn.disabled = false;
-}
-
-
-
-function disableDiscussion() {
-  el.discussionSection.classList.add('hidden');
-
-  const input = document.getElementById("messageInput");
-  const btn = document.getElementById("sendMessageBtn");
-
-  if (input) input.disabled = true;
-  if (btn) btn.disabled = true;
-}
 
 
 
@@ -2629,7 +2611,8 @@ function openModal(html) {
   // ferme toute modale existante
   document.querySelectorAll('.modal').forEach(m => m.remove());
 
-  document.body.style.overflow = 'hidden';
+  //document.body.style.overflow = 'hidden';
+  document.body.classList.add("modal-open");
 
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -2653,7 +2636,8 @@ function closeModal(modal) {
   // joue l'animation de sortie
   modal.classList.remove('open');
   modal.querySelector('.modal-card').addEventListener('transitionend', () => {
-    document.body.style.overflow = '';
+    //document.body.style.overflow = '';
+    document.body.classList.remove("modal-open");
     modal.remove();
   }, { once: true });
 }
