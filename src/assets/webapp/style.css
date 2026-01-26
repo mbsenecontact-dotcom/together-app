@@ -1194,6 +1194,20 @@ main, #discussionSection {
 }
 
 
+.consent-checkbox {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: start;   /* 🔑 aligné sur la 1ère ligne */
+  margin: 12px 0;
+}
+
+.consent-checkbox input {
+  margin-top: 0.2em;    /* ajustement fin */
+}
+
+
+
 #juzActions.hidden {
   display: none;
 }
