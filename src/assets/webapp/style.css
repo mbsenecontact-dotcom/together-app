@@ -11,7 +11,7 @@
 
   /* Z-INDEX */
   --z-header: 100;
-  --z-session-actions: 800;
+  --z-session-actions: 80;
   --z-session-menu: 900;
   --z-bottom-bar: 1000;
   --z-scroll-btn: 1100;
@@ -2448,4 +2448,12 @@ textarea::placeholder {
   display: flex;
   gap: 6px;
   margin: 12px 0;
+}
+
+.util-body {
+  padding: 20px 18px 24px;
+  padding-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }

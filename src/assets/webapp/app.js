@@ -25,60 +25,23 @@ const menuUserAvatar = document.getElementById("menuUserAvatar");
 
 
 const filterButtons = [btnToutes, btnLectures, btnHistorique];
-/*
-const PUBLICITE_DATA = {
-  projets: [
-    {
-      title: "Soutien à une Mosquée",
-      description: "Participez à la rénovation d’une mosquée locale.",
-      link: "https://www.helloasso.com/",
-      cta: "Faire un don"
-    },
-    {
-      title: "Aide humanitaire",
-      description: "Soutien alimentaire pour familles démunies.",
-      link: "https://www.helloasso.com/",
-      cta: "Contribuer"
-    }
-  ],
 
-  ventes: [
-    {
-      title: "Livres Islamiques",
-      description: "Sélection de livres via Amazon (affiliation).",
-      link: "https://www.amazon.fr/",
-      cta: "Voir les produits"
-    }
-  ],
 
-  entreprises: [
-    {
-      title: "Western Union",
-      description: "Transferts d’argent internationaux rapides."
-    },
-    {
-      title: "RIA",
-      description: "Service de transfert d’argent sécurisé."
-    },
-    {
-      title: "Taptap Send",
-      description: "Envoi d’argent sans frais vers l’Afrique."
-    }
-  ]
-};
-*/
 
 const UTILITAIRE_DATA = {
   prieres: [
     {
       title: "Invocation de clôture",
       description: "Doua à réciter en fin d’assemblée.",
-      pdf: "assets/pdf/priere-fermeture.pdf"
+      content: `
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+      `
     },
     {
       title: "Doua de fin de lecture",
       description: "Invocation après lecture du Coran.",
-      pdf: "assets/pdf/doua-fin-coran.pdf"
+      content: "assets/pdf/doua-fin-coran.pdf"
     }
   ],
 
@@ -86,12 +49,12 @@ const UTILITAIRE_DATA = {
     {
       title: "Juz Amma",
       description: "Dernière partie du Coran (Juz 30).",
-      pdf: "assets/pdf/juz-30.pdf"
+      content: "Bientôt"
     },
     {
       title: "Juz Tabarak",
       description: "Partie 29 du Coran.",
-      pdf: "assets/pdf/juz-29.pdf"
+      content: "Bientôt"
     }
   ],
 
@@ -99,12 +62,20 @@ const UTILITAIRE_DATA = {
     {
       title: "Zikr du matin",
       description: "Formules à réciter après Fajr.",
-      pdf: "assets/pdf/zikr-matin.pdf"
+      content: `
+        SubhanAllah (33 fois)
+        Alhamdulillah (33 fois)
+        Allahu Akbar (34 fois)
+      `
     },
     {
       title: "Zikr du soir",
       description: "Protection et rappel d’Allah.",
-      pdf: "assets/pdf/zikr-soir.pdf"
+      content: `
+        SubhanAllah (33 fois)
+        Alhamdulillah (33 fois)
+        Allahu Akbar (34 fois)
+      `
     }
   ]
 };
@@ -211,6 +182,7 @@ let allVisibleSessions = []; // cache
 let currentFilter = "toutes";      // toutes | lectures | historique
 let currentTypeFilter = "coran";  // coran | zikr
 let unsubscribeMessages = null;
+let discussionUnlocked = false;
 
 
 //let currentSessionTab = "juz"; // "juz" | "discussion"
@@ -411,6 +383,16 @@ tabZikr.onclick = () => {
 };
 
 /* ---------- Helpers ---------- */
+//Afficher la discussion uniquement au clic sur le tab
+function openDiscussionTab(currentSessionId) {
+  if (!discussionUnlocked) return;
+
+  el.discussionSection.classList.remove('hidden');
+  loadMessages(currentSessionId);
+}
+
+
+
 async function refreshDiscussionAccess() {
   if (!currentSession) return;
 
@@ -418,6 +400,9 @@ async function refreshDiscussionAccess() {
 
   if (canAccess) {
     unlockDiscussion();
+  } else {
+    discussionUnlocked = false;
+    lockDiscussion();
   }
 }
 
@@ -428,20 +413,26 @@ function lockDiscussion() {
   const input = document.getElementById("messageInput");
   const btn = document.getElementById("sendMessageBtn");
 
-  if (input) input.disabled = true;
+  if (input) input.disabled = true;async function refreshDiscussionAccess() {
+    if (!currentSession) return;
+  
+    const canAccess = await userCanAccessDiscussion(currentSession);
+  
+    if (canAccess) {
+      unlockDiscussion();
+    }
+  }
   if (btn) btn.disabled = true;
 }
 
 function unlockDiscussion() {
-  el.discussionSection.classList.remove('hidden');
+  discussionUnlocked = true;
 
   const input = document.getElementById("messageInput");
   const btn = document.getElementById("sendMessageBtn");
 
   if (input) input.disabled = false;
   if (btn) btn.disabled = false;
-
-  loadMessages(currentSessionId); // 🔥 CHARGÉ ICI SEULEMENT
 }
 
 
@@ -553,65 +544,6 @@ function requireAdmin(session) {
   return true;
 }
 
-/*
-
-async function hasRealInternet(timeout = 4000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const res = await fetch('https://www.google.com/favicon.ico', {
-      method: 'GET',
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-
-    return res.ok;
-  } catch (e) {
-    return false;
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-function setupNetworkWatcher() {
-  let lastStatus = null;
-  let checking = false;
-
-  async function check() {
-    if (checking) return;
-    checking = true;
-
-    const online = await hasRealInternet();
-    console.log('Online:', online);
-
-    if (online !== lastStatus) {
-      lastStatus = online;
-
-      if (!online) {
-        showModalFeedback(
-          'Connexion internet perdue. Certaines actions sont suspendues.',
-          'system'
-        );
-      } else {
-        showModalFeedback(
-          'Connexion internet rétablie ✅',
-          'success'
-        );
-      }
-    }
-
-    checking = false;
-  }
-
-  window.addEventListener('online', check);
-  window.addEventListener('offline', check);
-
-  setInterval(check, 5000);
-
-  check(); // état initial
-}
-*/
 
 
 function shareSessionInvite(meta) {
@@ -2288,6 +2220,7 @@ async function renderZikrFormulas(formules, sessionId) {
         c => c.uid === auth.currentUser.uid
       );
 
+      /*  A RETRAVAILLER
       if (myContrib && myContrib.finished >= myContrib.value) {
         showModalFeedback(
           `ℹ️ Votre précédente contribution est terminée.
@@ -2295,7 +2228,7 @@ async function renderZikrFormulas(formules, sessionId) {
           "info",
           4500
         );
-      }
+      }*/
 
 
       // ✅ OK → validation Firestore
@@ -2949,7 +2882,7 @@ function renderPublicite(type) {
 /// FIN PUB
 
 //UTILITAIRE
-
+/*
 function renderUtilitaire(type) {
   const container = document.getElementById("utilitaireContent");
   container.innerHTML = "";
@@ -2975,6 +2908,39 @@ function renderUtilitaire(type) {
            class="btn btn-primary">
            Ouvrir le document
         </a>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  container.scrollTo({ left: 0, behavior: "instant" });
+}
+*/
+
+function renderUtilitaire(type) {
+  const container = document.getElementById("utilitaireContent");
+  container.innerHTML = "";
+
+  const data = UTILITAIRE_DATA[type] || [];
+
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state">Aucun contenu disponible</div>`;
+    return;
+  }
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "util-card";
+
+    card.innerHTML = `
+      <div class="util-body">
+        <h4>${item.title}</h4>
+        <p class="util-desc">${item.description}</p>
+
+        <div class="util-text">
+          ${item.content.replace(/\n/g, "<br>")}
+        </div>
       </div>
     `;
 
@@ -3425,7 +3391,7 @@ function initSessionTabs(session) {
     tabFormula.classList.remove("active");
   
     // 🔄 charger messages AU MOMENT DU CLIC
-    await loadMessages(currentSession.id);
+    openDiscussionTab(currentSession.id);
   };
   
 }
