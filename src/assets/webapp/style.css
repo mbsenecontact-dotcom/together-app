@@ -39,7 +39,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: MEDIUMSEAGREEN;
+  background: #3cb371;
   border-bottom: 1px solid #eee;
   position: sticky;
   top: 0;
@@ -2211,55 +2211,12 @@ textarea::placeholder {
   border-radius: 8px;
   font-weight: 600;
 }
-
-
-.pub-body {
-  flex: 1;
-  padding: 18px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.pub-body h4 {
-  font-size: 1.4rem;
-}
-
-.pub-body p {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #444;
-}
-
-.pub-body .btn {
-  margin-top: auto;      /* 🔥 pousse le bouton en bas */
-  text-align: center;
-}
-
-.pub-carousel {
-  display: flex;
-  gap: 12px;
-
-  overflow-x: auto;
-  overflow-y: hidden;
-
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-
-  padding: 12px 6px;
-}
-
-/* cacher scrollbar */
-.pub-carousel::-webkit-scrollbar {
-  display: none;
-}
-
+/*  PUB */
 .pub-card {
   flex: 0 0 85vw;
   max-width: 420px;
 
-  min-height: 80vh;              /* 🔥 hauteur importante */
+  min-height: 80vh;
   max-height: 90vh;
 
   background: #fff;
@@ -2271,39 +2228,20 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
 
+  border: 1px solid rgba(0,0,0,0.06);
+  background: #fff;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   scroll-snap-align: center;
 }
 
 
-/* image */
-.pub-card img {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  border-radius: 12px;
-  min-height: 75vh;        /* 🔥 carte plus haute */
-  max-height: 85vh;        /* évite de dépasser l’écran */
-}
-
-@media (min-width: 768px) {
-  .pub-card {
-    flex: 0 0 45%;
-  }
-}
-
-@media (min-width: 1024px) {
-  .pub-card {
-    flex: 0 0 30%;
-  }
-}
-
-.pub-card:active {
-  transform: scale(0.97);
-}
 
 .pub-image {
-  height: 45%;
+  height: 35%;              /* 🔥 moins envahissant */
   width: 100%;
+  overflow: hidden;
+  background: #f0f0f0;
 }
 
 .pub-image img {
@@ -2311,56 +2249,50 @@ textarea::placeholder {
   height: 100%;
   object-fit: cover;
 }
-.pub-tabs {
+
+
+.pub-body {
+  flex: 1;
+  padding: 20px 18px 24px;
+  border-top: 1px solid #eee;  /* 🔥 séparation nette */
+
   display: flex;
-  gap: 6px;
-  margin: 12px 0;
+  flex-direction: column;
+  gap: 14px;
 }
 
-#publiciteContent {
+.pub-body h4 {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+
+
+.pub-body p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #555;
+}
+
+.pub-body .btn {
+  margin-top: auto; /* 🔥 bouton toujours en bas */
+}
+
+
+.pub-carousel {
   display: flex;
-  gap: 12px;
+  gap: 18px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 12px;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 6px;
+}
+
+.pub-carousel::-webkit-scrollbar {
+  display: none;
 }
 
 
-.pub-card-wa {
-  width: 260px;
-  height: 420px;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #000;
-  flex-shrink: 0;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-  position: relative;
-  scroll-snap-align: start;
-}
-
-/* image */
-.pub-img-wrapper img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* overlay texte */
-.pub-overlay-text {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
-  background: linear-gradient(
-    transparent,
-    rgba(0,0,0,0.75)
-  );
-}
+/*  FIN PUB  */
 
 /* ===== UTILITAIRE (copie logique de Publicité) ===== */
 
@@ -2382,10 +2314,6 @@ textarea::placeholder {
 .util-carousel::-webkit-scrollbar {
   display: none;
 }
-
-
-
-
 
 .util-card {
   flex: 0 0 85vw;
@@ -2453,7 +2381,9 @@ textarea::placeholder {
 .util-body {
   padding: 20px 18px 24px;
   padding-top: 28px;
+  padding-bottom: 48px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+

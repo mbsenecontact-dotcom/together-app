@@ -36,12 +36,80 @@ const UTILITAIRE_DATA = {
       content: `
         Allahumma la sahla illa ma ja‘altahu sahla,
         wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+        Allahumma la sahla illa ma ja‘altahu sahla,
+        wa anta taj‘alu al-hazna idha shi’ta sahla.
+
       `
     },
     {
       title: "Doua de fin de lecture",
       description: "Invocation après lecture du Coran.",
       content: "assets/pdf/doua-fin-coran.pdf"
+    }
+    , 
+    {
+      title: "Seydil Hadji Omar TALL (RTA)",
+      description: "Doua de fin de lecture.",
+      content: "Bientôt ICI"
+    }, 
+    {
+      title: "Seydil Hadji Malick SY (RTA)",
+      description: "Doua de fin de lecture.",
+      content: "Bientôt ICI"
+    }, 
+    {
+      title: "Seydil Hadji Ibrahima NIASS (RTA)",
+      description: "Doua de fin de lecture.",
+      content: "Bientôt ICI"
+    }, 
+    {
+      title: "Serigne Touba(RTA)",
+      description: "Doua de fin de lecture.",
+      content: "Bientôt ICI"
     }
   ],
 
@@ -2737,126 +2805,6 @@ function renderPublicite(type) {
 
   const data = PUBLICITE_DATA[type] || [];
 
-  if (!data.length) {
-    container.innerHTML = `<div class="empty-state">Aucun contenu disponible</div>`;
-    return;
-  }
-
-  data.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "card";
-
-    card.innerHTML = `
-      <h4>${item.title}</h4>
-      <p>${item.description}</p>
-
-      ${
-        item.link
-          ? `<a href="${item.link}" target="_blank" class="btn btn-success">
-              ${item.cta || "Voir"}
-            </a>`
-          : ""
-      }
-    `;
-
-    container.appendChild(card);
-  });
-}*/
-/*
-function renderPublicite(type) {
-  const container = document.getElementById("publiciteContent");
-  container.innerHTML = "";
-
-  const data = PUBLICITE_DATA[type] || [];
-
-  if (!data.length) {
-    container.innerHTML = `
-      <div class="empty-state">Aucun contenu disponible</div>
-    `;
-    return;
-  }
-
-  data.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "pub-card";
-
-    card.innerHTML = `
-      <h4>${item.title}</h4>
-      <p>${item.description}</p>
-
-      ${
-        item.link
-          ? `<a href="${item.link}"
-               target="_blank"
-               class="btn btn-success">
-               ${item.cta || "Voir"}
-             </a>`
-          : ""
-      }
-    `;
-
-    container.appendChild(card);
-  });
-
-  // 🔥 reset scroll à gauche à chaque changement d’onglet
-  container.scrollTo({ left: 0, behavior: "instant" });
-}
-*/
-
-/*
-function renderPublicite(type) {
-  const container = document.getElementById("publiciteContent");
-  container.innerHTML = "";
-
-  const data = PUBLICITE_DATA[type] || [];
-
-  if (!data.length) {
-    container.innerHTML = `
-      <div class="empty-state">Aucun contenu disponible</div>
-    `;
-    return;
-  }
-
-  data.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "pub-card";
-
-    card.innerHTML = `
-      ${item.image ? `
-        <div class="pub-image">
-          <img src="${item.image}" alt="${item.title}">
-        </div>
-      ` : ""}
-
-      <div class="pub-body">
-        <h4>${item.title}</h4>
-        <p>${item.description}</p>
-
-        ${
-          item.link
-            ? `<a href="${item.link}"
-                 target="_blank"
-                 class="btn btn-success">
-                 ${item.cta || "Voir"}
-               </a>`
-            : ""
-        }
-      </div>
-    `;
-
-    container.appendChild(card);
-  });
-
-  // 🔥 reset scroll à gauche à chaque changement d’onglet
-  container.scrollTo({ left: 0, behavior: "instant" });
-}
-*/
-function renderPublicite(type) {
-  const container = document.getElementById("publiciteContent");
-  container.innerHTML = "";
-
-  const data = PUBLICITE_DATA[type] || [];
-
   data.forEach(item => {
     const card = document.createElement("div");
     card.className = "pub-card-wa";
@@ -2877,7 +2825,41 @@ function renderPublicite(type) {
     container.appendChild(card);
   });
 }
+*/
+function renderPublicite(type) {
+  const container = document.getElementById("publiciteContent");
+  container.innerHTML = "";
 
+  const data = PUBLICITE_DATA[type] || [];
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "pub-card";
+
+    card.innerHTML = `
+      <div class="pub-image">
+        <img src="${item.image}" alt="${item.title}">
+      </div>
+
+      <div class="pub-body">
+        <h4>${item.title}</h4>
+        <p>${item.description}</p>
+
+        ${item.cta ? `
+          <button class="btn btn-primary">
+            ${item.cta}
+          </button>
+        ` : ""}
+      </div>
+    `;
+
+    if (item.link) {
+      card.onclick = () => window.open(item.link, "_blank");
+    }
+
+    container.appendChild(card);
+  });
+}
 
 /// FIN PUB
 

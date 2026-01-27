@@ -2,12 +2,19 @@
 <resources>
 
     <!-- Thème principal -->
+
+
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowFullscreen">false</item>
-        <item name="android:statusBarColor">#ffffff</item>
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">#3cb371</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <!-- false = icônes blanches -->
+
+        <item name="colorPrimary">#3cb371</item>
+        <item name="colorPrimaryDark">#2e8b57</item>
+        <item name="colorAccent">#3cb371</item>
     </style>
 
     <!-- Variante sans ActionBar -->
