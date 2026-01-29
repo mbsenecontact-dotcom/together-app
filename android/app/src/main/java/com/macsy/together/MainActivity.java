@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.macsy.together;
 
 import com.getcapacitor.BridgeActivity;
 

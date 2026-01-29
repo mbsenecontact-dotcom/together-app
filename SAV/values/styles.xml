@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Thème principal -->
+
+
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowFullscreen">false</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">#3cb371</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <!-- false = icônes blanches -->
+
+        <item name="colorPrimary">#3cb371</item>
+        <item name="colorPrimaryDark">#2e8b57</item>
+        <item name="colorAccent">#3cb371</item>
+    </style>
+
+    <!-- Variante sans ActionBar -->
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+    </style>
+
+    <!-- Splash screen -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash</item>
+    </style>
+
+</resources>

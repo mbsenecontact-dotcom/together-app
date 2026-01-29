@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "444689419534",
+    "project_id": "juzmanager",
+    "storage_bucket": "juzmanager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:444689419534:android:1c309c9dada13838aadb5f",
+        "android_client_info": {
+          "package_name": "com.macsy.together"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "444689419534-1u7mi9vk8l40b6tbjtfeu99muc4helic.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlDquCOtJ4fmFylLfvL3UyDmkyFWHP_MY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "444689419534-1u7mi9vk8l40b6tbjtfeu99muc4helic.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "444689419534-8ubm0bp3atpf5pildjf8l5i39ur9m7ho.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.macsy.ios.together"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
