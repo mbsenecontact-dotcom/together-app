@@ -47,6 +47,7 @@ body {
 }
 
 .logo {
+  font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
