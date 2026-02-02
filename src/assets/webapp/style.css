@@ -20,7 +20,7 @@
   --z-homeConnectBtn: 5000;
 
 
-  --bottom-bar-height: 90px;
+  --bottom-bar-height: 60px;
 }
 
 * {
@@ -38,7 +38,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 0px 12px;
   background: #3cb371;
   border-bottom: 1px solid #eee;
   position: sticky;
@@ -717,7 +717,7 @@ main, #discussionSection {
 .icon-circle {
   width: 30px;
   height: 30px;
-  background: var(--wa-green);
+  background: #3cb371;
   border-radius: 50%;
   display: flex;
   align-items: center;        /* centre verticalement */
@@ -728,7 +728,7 @@ main, #discussionSection {
 
 .icon-circle .icon {
   color: white;
-  font-size: 18px;       /* ajuste ici selon le rendu */
+  font-size: 21px;       /* ajuste ici selon le rendu */
   display: block;        /* empêche le décalage baseline */
   line-height: 1;        /* centre verticalement */
   transform: translateY(1px); /* ajuste +1px vers le bas */
@@ -755,7 +755,7 @@ main, #discussionSection {
 
 
 .label {
-  font-size: 18px;
+  font-size: 14px;
   color: #333;
 }
 
