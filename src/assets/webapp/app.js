@@ -16,15 +16,28 @@ import {
 /* ---------- Elements ---------- */
 const searchInput = document.getElementById("searchCampaignInput");
 const sessionsContainer = document.getElementById("sessions");
-const btnToutes = document.getElementById("toutes");
-const btnLectures = document.getElementById("lectures");
+//const btnToutes = document.getElementById("toutes");
+//const btnLectures = document.getElementById("lectures");
 const btnHistorique = document.getElementById("historique");
 const campaignTitle = document.getElementById("campaignTitle");
 const profileEditionLink = document.getElementById("profileEdition");
 const menuUserAvatar = document.getElementById("menuUserAvatar");
 
+const btnFilterAll = document.getElementById("filterAll");
+const btnFilterCoran = document.getElementById("filterCoran");
+const btnFilterZikr = document.getElementById("filterZikr");
+const btnFilterMine = document.getElementById("filterMine");
 
-const filterButtons = [btnToutes, btnLectures, btnHistorique];
+
+//const filterButtons = [btnFilterAll, btnFilterCoran, btnFilterZikr,btnFilterMine, btnHistorique];
+
+const allTabs = [
+  btnFilterAll,
+  btnFilterCoran,
+  btnFilterZikr,
+  btnFilterMine,
+  btnHistorique
+];
 
 
 
@@ -248,16 +261,17 @@ const el = {
 
 let allVisibleSessions = []; // cache 
 let currentFilter = "toutes";      // toutes | lectures | historique
-let currentTypeFilter = "coran";  // coran | zikr
+let currentMainFilter = "all"; // all | coran | zikr | mine
+//let currentTypeFilter = "coran";  // coran | zikr
 let unsubscribeMessages = null;
 let discussionUnlocked = false;
 
 
 //let currentSessionTab = "juz"; // "juz" | "discussion"
-const tabCoran = document.getElementById("tabCoran");
-const tabZikr = document.getElementById("tabZikr");
-const juzGrid = document.getElementById('grid');      // grille Juz dans sessionView
-const zikrGrid = document.getElementById('zikrView'); // grille Zikr
+//const tabCoran = document.getElementById("tabCoran");
+//const tabZikr = document.getElementById("tabZikr");
+//const juzGrid = document.getElementById('grid');      // grille Juz dans sessionView
+//const zikrGrid = document.getElementById('zikrView'); // grille Zikr
 const sessionView = document.getElementById('sessionView');
 
 
@@ -276,6 +290,20 @@ const sessionView = document.getElementById('sessionView');
   // only show sessions after login
 
   //setupNetworkWatcher();
+
+  const menuDiscussion = document.getElementById("menuDiscussion");
+
+menuDiscussion.onclick = async (e) => {
+  e.stopPropagation();
+
+  // fermer le menu
+  document.getElementById("sessionMenu").classList.add("hidden");
+  document
+    .getElementById("sessionMenuBtn")
+    .setAttribute("aria-expanded", "false");
+
+  await openDiscussionFromMenu();
+};
 
 
   onAuthStateChanged(auth, async (user) => {
@@ -417,7 +445,7 @@ const sessionView = document.getElementById('sessionView');
 
 })();
 
-
+/*
 tabCoran.onclick = () => {
   currentTypeFilter = "coran";
 
@@ -431,8 +459,8 @@ tabCoran.onclick = () => {
   // réinitialise les onglets internes
 
   applyFilter();
-};
-
+};*/
+/*
 tabZikr.onclick = () => {
   currentTypeFilter = "zikr";
 
@@ -448,7 +476,7 @@ tabZikr.onclick = () => {
   sessionView.hidden = true;
 
   applyFilter();
-};
+};*/
 
 /* ---------- Helpers ---------- */
 //Afficher la discussion uniquement au clic sur le tab
@@ -457,6 +485,26 @@ function openDiscussionTab(currentSessionId) {
 
   el.discussionSection.classList.remove('hidden');
   loadMessages(currentSessionId);
+}
+
+async function openDiscussionFromMenu() {
+  // 🔒 sécurité accès
+  const canAccess = await userCanAccessDiscussion(currentSession);
+  if (!canAccess) {
+    showModalFeedback(
+      "Vous devez d’abord participer à la campagne pour accéder à la discussion.",
+      "info"
+    );
+    return;
+  }
+
+  // 👁️ visibilité
+  el.discussionSection.classList.remove("hidden");
+  el.grid.classList.add("hidden");
+  document.getElementById("zikrView")?.classList.add("hidden");
+
+  // 🔄 lazy load (comportement IDENTIQUE)
+  openDiscussionTab(currentSession.id);
 }
 
 
@@ -936,13 +984,33 @@ async function loadSessions() {
 async function applyFilter() {
   let list = [];
   const user = auth.currentUser;
-
+  updateCampaignTitle();
   for (const session of allVisibleSessions) {
 
-    // 🔹 FILTRE TYPE CAMPAGNE
-    if (session.typeCampagne !== currentTypeFilter) continue;
+    /* ===== FILTRE PRINCIPAL (menu) ===== */
+    if (currentMainFilter === "coran" && session.typeCampagne !== "coran") continue;
+    if (currentMainFilter === "zikr" && session.typeCampagne !== "zikr") continue;
 
-    // 🔹 FILTRE "TOUTES"
+    if (currentMainFilter === "mine") {
+      if (!user) continue;
+
+      let hasParticipated = false;
+
+      if (session.typeCampagne === "coran") {
+        hasParticipated = await userHasJuzInSession(session.id, user.uid);
+      }
+
+      if (session.typeCampagne === "zikr") {
+        const snap = await getDoc(
+          doc(db, SESSIONS_COLLECTION, session.id, "zikrContributions", user.uid)
+        );
+        hasParticipated = snap.exists();
+      }
+
+      if (!hasParticipated) continue;
+    }
+
+    /* ===== ANCIENS FILTRES (état uniquement) ===== */
     if (currentFilter === "toutes") {
       list.push(session);
       continue;
@@ -950,72 +1018,63 @@ async function applyFilter() {
 
     if (!user) continue;
 
-    /* ==========================
-       📖 CAMPAGNE CORAN
-       ========================== */
-    if (session.typeCampagne === "coran") {
-      const juzSnap = await getDocs(
-        collection(db, SESSIONS_COLLECTION, session.id, "juz")
-      );
-      const juzList = juzSnap.docs.map(d => d.data());
-
-      if (
-        currentFilter === "lectures" &&
-        juzList.some(j =>
-          j.assignedTo === user.uid &&
-          session.status !== "closed"
-        )
-      ) {
-        list.push(session);
-      }
-
-      if (
-        currentFilter === "historique" &&
-        juzList.some(j =>
-          j.assignedTo === user.uid &&
-          j.status === "finished"
-        ) &&
-        session.status === "closed"
-      ) {
-        list.push(session);
-      }
+    if (currentFilter === "lectures" && session.status !== "closed") {
+      list.push(session);
     }
 
-    /* ==========================
-       🧿 CAMPAGNE ZIKR
-       ========================== */
-    if (session.typeCampagne === "zikr") {
-
-      // contribution utilisateur
-      const contribRef = doc(
-        db,
-        SESSIONS_COLLECTION,
-        session.id,
-        "zikrContributions",
-        user.uid
-      );
-      const contribSnap = await getDoc(contribRef);
-
-      if (
-        currentFilter === "lectures" &&
-        contribSnap.exists() &&
-        session.status !== "closed"
-      ) {
-        list.push(session);
-      }
-
-      if (
-        currentFilter === "historique" &&
-        contribSnap.exists() &&
-        session.status === "closed"
-      ) {
-        list.push(session);
-      }
+    if (currentFilter === "historique" && session.status === "closed") {
+      list.push(session);
     }
   }
 
   renderSessions(list);
 }
+
+function activateTab(activeBtn) {
+  allTabs.forEach(btn => btn.classList.remove("active"));
+  activeBtn.classList.add("active");
+}
+
+
+
+btnFilterAll.onclick = e => {
+  activateTab(e.target);
+  currentMainFilter = "all";
+  currentFilter = "toutes";
+  applyFilter();
+};
+
+btnFilterCoran.onclick = e => {
+  activateTab(e.target);
+  currentMainFilter = "coran";
+  currentFilter = "toutes";
+  applyFilter();
+};
+
+btnFilterZikr.onclick = e => {
+  activateTab(e.target);
+  currentMainFilter = "zikr";
+  currentFilter = "toutes";
+  applyFilter();
+};
+
+btnFilterMine.onclick = e => {
+  activateTab(e.target);
+  currentMainFilter = "mine";
+  currentFilter = "toutes";
+  applyFilter();
+};
+
+
+btnHistorique.onclick = e => {
+  activateTab(e.target);
+
+  // 👇 on ne touche PAS au type
+  currentMainFilter = "historique"; // ou on garde la valeur précédente si tu veux
+  currentFilter = "historique";
+
+  applyFilter();
+};
 
 
 function renderSessions(list) {
@@ -2731,19 +2790,63 @@ searchInput.addEventListener("input", () => {
 
 
 /* ---------- Filtres campagnes ---------- */
+function updateCampaignTitle() {
+  // Priorité à l’état
+  /*if (currentFilter === "historique") {
+    campaignTitle.textContent = "Mon historique de participation";
+    return;
+  }*/
 
+  switch (currentMainFilter) {
+    case "coran":
+      campaignTitle.textContent = "Campagnes de lecture du Coran";
+      break;
+    case "zikr":
+      campaignTitle.textContent = "Séries de Zikr";
+      break;
+    case "mine":
+      campaignTitle.textContent = "Mes lectures";
+      break;
+    case "all":
+        campaignTitle.textContent = "Toutes les campagnes";
+        break;
+    default:
+      campaignTitle.textContent = "Mon historique de participation";
+  }
+}
+
+
+function setActiveButton(buttons, activeBtn) {
+  buttons.forEach(btn => btn.classList.remove("active"));
+  activeBtn.classList.add("active");
+}
+
+/*
 function setActiveFilter(activeBtn) {
   filterButtons.forEach(btn => btn.classList.remove("active"));
   activeBtn.classList.add("active");
 
-  if (activeBtn === btnToutes) {
+  if (activeBtn === btnFilterAll) {
     campaignTitle.textContent = "Toutes les campagnes...";
-    currentFilter = "toutes";
+    //currentFilter = "toutes";
+    currentMainFilter = "all";
+  }
+  if (activeBtn === btnFilterCoran) {
+    campaignTitle.textContent = "Les campagnes de lecture de coran...";
+    //currentFilter = "lectures";
+    currentMainFilter = "coran";
   }
 
-  if (activeBtn === btnLectures) {
+  if (activeBtn === btnFilterZikr) {
+    campaignTitle.textContent = "Les campagnes de zikr...";
+    //currentFilter = "historique";
+    currentMainFilter = "zikr";
+  }
+
+  if (activeBtn === btnFilterMine) {
     campaignTitle.textContent = "Mes campagnes en cours...";
-    currentFilter = "lectures";
+    //currentFilter = "lectures";
+    currentMainFilter = "mine";
   }
 
   if (activeBtn === btnHistorique) {
@@ -2752,15 +2855,15 @@ function setActiveFilter(activeBtn) {
   }
 
   applyFilter();
-}
+}*/
 
 // événements
-btnToutes.addEventListener("click", () => { setActiveFilter(btnToutes); refreshGrid(); });
-btnLectures.addEventListener("click", () => { setActiveFilter(btnLectures); refreshGrid(); });
-btnHistorique.addEventListener("click", () => { setActiveFilter(btnHistorique); refreshGrid(); });
+//btnToutes.addEventListener("click", () => { setActiveFilter(btnToutes); refreshGrid(); });
+//btnLectures.addEventListener("click", () => { setActiveFilter(btnLectures); refreshGrid(); });
+//btnHistorique.addEventListener("click", () => { setActiveFilter(btnHistorique); refreshGrid(); });
 
 // état initial
-setActiveFilter(btnToutes);
+//setActiveFilter(btnFilterAll);
 
 
 /// PUB
@@ -3289,7 +3392,7 @@ async function loadMessages(sessionId) {
 }
 
 function initSessionTabs(session) {
-  const tabJuz = document.getElementById("tabJuz");
+ // const tabJuz = document.getElementById("tabJuz");
   const tabFormula = document.getElementById("tabFormula");
   const tabDiscussion = document.getElementById("tabDiscussion");
 
@@ -3300,10 +3403,10 @@ function initSessionTabs(session) {
   if (!tabDiscussion) return;
 
   // 🔄 reset visibilité & états
-  [tabJuz, tabFormula, tabDiscussion].forEach(t => {
+ /* [tabJuz, tabFormula, tabDiscussion].forEach(t => {
     t?.classList.remove("active");
     t?.classList.remove("hidden");
-  });
+  });*/
 
   [grid, zikrView, discussion].forEach(v => {
     v?.classList.add("hidden");
@@ -3313,9 +3416,9 @@ function initSessionTabs(session) {
      📖 CAMPAGNE CORAN
      ===================================================== */
   if (session.typeCampagne === 'coran') {
-    tabFormula.classList.add("hidden");
+    //tabFormula.classList.add("hidden");
 
-    tabJuz.classList.add("active");
+  //  tabJuz.classList.add("active");
     grid.classList.remove("hidden");
   }
 
@@ -3323,16 +3426,16 @@ function initSessionTabs(session) {
      🧿 CAMPAGNE ZIKR
      ===================================================== */
   if (session.typeCampagne === 'zikr') {
-    tabJuz.classList.add("hidden");
+  //  tabJuz.classList.add("hidden");
 
-    tabFormula.classList.add("active");
+   // tabFormula.classList.add("active");
     zikrView.classList.remove("hidden");
   }
 
   /* =====================================================
      🎯 EVENTS
      ===================================================== */
-
+/*
   tabJuz.onclick = () => {
     if (tabJuz.classList.contains('hidden')) return;
 
@@ -3356,7 +3459,7 @@ function initSessionTabs(session) {
     tabJuz.classList.remove("active");
     tabDiscussion.classList.remove("active");
   };
-
+*/
 
   tabDiscussion.onclick = async () => {
 

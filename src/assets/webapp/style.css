@@ -355,6 +355,7 @@ main, #discussionSection {
 }
 
 .campagne-header {
+  height: 32px;
   display: flex;
   align-items: center;      /* 🔥 empêche l'étirement vertical */
   gap: 8px;
@@ -368,12 +369,31 @@ main, #discussionSection {
 
 /* Boutons classiques */
 .campagne-header .btn {
-  height: 36px;
+  height: 25px;
   padding: 0 14px;
   border-radius: 12px;
   white-space: nowrap;
+  border: 2px solid transparent;
+  background: #f5f5f5;
+  color: #333;
+  transition: all 0.2s ease;
 }
 
+.campagne-header-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  overflow-x: auto;        /* 🔥 scroll horizontal */
+  overflow-y: hidden;
+  white-space: nowrap;
+
+  scrollbar-width: none;   /* Firefox */
+}
+
+.campagne-header-btn::-webkit-scrollbar {
+  display: none;           /* Chrome / Safari */
+}
 
 
 
@@ -477,13 +497,7 @@ main, #discussionSection {
 }
 
 
-/* bouton filtre */
-.campagne-header .btn {
-  border: 2px solid transparent;
-  background: #f5f5f5;
-  color: #333;
-  transition: all 0.2s ease;
-}
+
 
 /* bouton actif */
 .campagne-header .btn.active {
@@ -1088,15 +1102,18 @@ main, #discussionSection {
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 10px;
+  flex: 0 0 auto;          /* 🔥 empêche l’écrasement */
+  padding: 6px 14px;
+  border-radius: 20px;
   border: 2px solid transparent;
   background: #f5f5f5;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+
+  white-space: nowrap;     /* 🔥 UNE SEULE LIGNE */
 }
+
 
 .tab-btn.active {
   background: #eafaf1;

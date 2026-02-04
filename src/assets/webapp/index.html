@@ -122,27 +122,25 @@
           <input type="text" id="searchCampaignInput" placeholder="Rechercher une campagne..."
             style="width:100%;padding:8px 10px 8px 35px; /* espace ajouté pour la loupe */ border-radius:6px;border:1px solid #ccc;" />
         </div>
-        <!-- Fin ajout -->
 
-        <div class="campagne-header">
-          <button id="toutes" class="tab-btn active">Toutes</button>
-          <button id="lectures" class="tab-btn">Lectures</button>
+
+        <div class="campagne-header-btn">
+          <button id="filterAll" class="tab-btn active">Toutes</button>
+          <button id="filterCoran" class="tab-btn">Lecture de Coran</button>
+          <button id="filterZikr" class="tab-btn">Séries de Zikr</button>
+          <button id="filterMine" class="tab-btn">Mes lectures</button>
           <button id="historique" class="tab-btn">Historique</button>
           <button id="utilitaire" class="tab-btn">Utilitaire</button>
           <button id="publicite" class="tab-btn">Publicité</button>
         </div>
+        
 
         <h4 id="campaignTitle"></h4>
-        <!-- Onglets Type Campagne -->
-        <div class="campagneType-tabs">
-          <button id="tabCoran" class="tab-btn active">Lecture Coran</button>
-          <button id="tabZikr" class="tab-btn">Série de Zikr</button>
-        </div>
 
         
         <div id="sessions"></div>
       </div>
-
+ 
       <div id="sessionView" class="card" hidden>
         <button id="backToSessionsBtn" class="back-btn">
           <i class="fa-solid fa-arrow-left"></i>
@@ -151,6 +149,11 @@
         
         <h3 id="sessionTitle">Lecture</h3>
         <div class="session-actions">
+          <button class="menu-item" id="menuDiscussion" role="menuitem">
+            <i class="fa-solid fa-comments"></i>
+            Discussion
+          </button>
+          
           <button
             id="sessionMenuBtn"
             class="icon-btn"
@@ -190,12 +193,12 @@
        <!-- <div style="margin-top:12px;">
           <button id="closeSessionBtn" class="btn btn-danger" style="display:none">Clôturer la campagne</button>
         </div>-->
-        <!-- Onglets -->
+        <!-- Onglets
         <div class="session-tabs">
           <button id="tabJuz" class="tab-btn">Juz</button>
           <button id="tabFormula" class="tab-btn hidden">Formule de Zikr</button>
           <button id="tabDiscussion" class="tab-btn">Discussion</button>
-        </div>
+        </div> -->
 
 
         <div id="grid" class="card"></div>
