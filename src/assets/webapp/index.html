@@ -17,25 +17,17 @@
 
   <!-- //////// HEADER ////////-->
   <header class="header">
-
-    <!-- Titre de l'Application class="logo" : style.css -->
+    
     <div class="logo">
-      <h1>Ttogether</h1>
+      <h1>To-Gether App</h1>
     </div>
-
-    <!-- Barre de navigation en haut à droite de l'écran class="header-right" : style.css -->
 
     <nav class="header-right">
       <select id="languageSelect" class="lang-select">
         <option value="fr" data-flag="🇫🇷">🇫🇷 Français</option>
         <option value="wo" data-flag="🇸🇳">🇸🇳 Wolof</option>
         <option value="en" data-flag="🇬🇧">🇬🇧 Anglais</option>
-        <!--
-        <option value="ar" data-flag="🇸🇦">🇸🇦 Arabe</option>
-        <option value="es" data-flag="🇪🇸">🇪🇸 Espagnol</option>
-        <option value="pt" data-flag="🇵🇹">🇵🇹 Portugais</option>
-        <option value="de" data-flag="🇩🇪">🇩🇪 Allemand</option>-->
-        
+
       </select>
     
       <div id="menuUserAvatar" class="avatar-sm">
@@ -126,10 +118,10 @@
 
         <div class="campagne-header-btn">
           <button id="filterAll" class="tab-btn active">Toutes</button>
-          <button id="filterCoran" class="tab-btn">Lecture de Coran</button>
-          <button id="filterZikr" class="tab-btn">Séries de Zikr</button>
-          <button id="filterMine" class="tab-btn">Mes lectures</button>
-          <button id="historique" class="tab-btn">Historique</button>
+          <button id="filterCoran" class="tab-btn">Lecture Coran</button>
+          <button id="filterZikr" class="tab-btn">Séries Zikr</button>
+          <button id="filterMine" class="tab-btn">En cours</button>
+          <button id="historique" class="tab-btn">Clôturées</button>
           <button id="utilitaire" class="tab-btn">Utilitaire</button>
           <button id="publicite" class="tab-btn">Publicité</button>
         </div>
@@ -149,11 +141,7 @@
         
         <h3 id="sessionTitle">Lecture</h3>
         <div class="session-actions">
-          <button class="menu-item" id="menuDiscussion" role="menuitem">
-            <i class="fa-solid fa-comments"></i>
-            Discussion
-          </button>
-          
+
           <button
             id="sessionMenuBtn"
             class="icon-btn"
@@ -173,65 +161,42 @@
         
             <button class="menu-item" id="menuEdit" role="menuitem">
               <i class="fa-solid fa-pen"></i>
-              Modifier la campagne
+              Modification
             </button>
+
+            <button id="menuDiscussion" class="menu-item"  role="menuitem">
+              <i class="fa-solid fa-comments"></i>
+              Discussion
+            </button>
+
         
             <button class="menu-item danger" id="closeSessionBtn" role="menuitem">
               <i class="fa-solid fa-lock"></i>
-              Clôturer la campagne
+              Clôture
             </button>
         
             <button class="menu-item danger" id="menuDelete" role="menuitem">
               <i class="fa-solid fa-trash"></i>
-              Supprimer la campagne
+              Supprission
             </button>
           </div>
         </div>
         
         <div id="sessionMeta"></div>
         <div id="stats" class="stats">Terminés : 0/30</div>
-       <!-- <div style="margin-top:12px;">
-          <button id="closeSessionBtn" class="btn btn-danger" style="display:none">Clôturer la campagne</button>
-        </div>-->
-        <!-- Onglets
-        <div class="session-tabs">
-          <button id="tabJuz" class="tab-btn">Juz</button>
-          <button id="tabFormula" class="tab-btn hidden">Formule de Zikr</button>
-          <button id="tabDiscussion" class="tab-btn">Discussion</button>
-        </div> -->
 
 
-        <div id="grid" class="card"></div>
 
-        <!-- ====== ZIKR VIEW ====== -->
-        <div id="zikrView" class="card hidden">
+        <div id="grid" class="full-width-container"></div>
 
-          <!--<div id="zikrMeta"></div>-->
-          <div id="zikrFeedback" class="zikr-feedback"></div>
-
+        <div id="zikrView" class="full-width-container hidden">
           <div id="zikrFormulas" class="grid"></div>
-
         </div>
 
 
 
-        <div id="discussionSection" class="card hidden">
-          <h4>Discussion de la campagne</h4>
-        
-          <div id="messagesList" class="messages"></div>
-        
-          <!-- Formulaire de message -->
-          <div id="messageForm" class="message-form">
-            <input id="messageInput" class="zikr-input" placeholder="Écrire un message…" maxlength="500" />
-            <button id="sendMessageBtn" class="btn btn-icon">
-              <!-- Icône Telegram -->
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon">
-                <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
-              </svg>
-            </button>
-          </div>
-          
-        </div>
+    <!-- Formulaire de message -->
+
         
       </div>
     </section>
