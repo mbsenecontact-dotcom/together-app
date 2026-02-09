@@ -1731,6 +1731,7 @@ function renderGrid(juzData) {
       contribsBox.classList.toggle('hidden', isOpen);
     });
 
+    /*
     assignBtn?.addEventListener('click', async (e) => {
       e.stopPropagation();
 
@@ -1752,8 +1753,38 @@ function renderGrid(juzData) {
       //await refreshDiscussionAccess();
 
     });
+    */
 
+    assignBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
 
+  openConfirmModal({
+    title: "Choisir ce Juz",
+    message: `Voulez-vous vous engager à lire le Juz n°${j.number} ?`,
+    confirmText: "Oui, je choisis",
+    onConfirm: async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const userSnap = await getDoc(doc(db, 'users', user.uid));
+      const pseudo = userSnap.data()?.pseudo || 'Utilisateur';
+
+      await updateDoc(
+        doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(j.number)),
+        {
+          status: 'assigned',
+          assignedTo: user.uid,
+          assignedPseudo: pseudo,
+          assignedAt: serverTimestamp()
+        }
+      );
+
+      showModalFeedback("📖 Juz choisi avec succès", "success");
+    }
+  });
+});
+
+/*
     finishBtn?.addEventListener('click', async (e) => {
       e.stopPropagation();
 
@@ -1768,6 +1799,33 @@ function renderGrid(juzData) {
         }
       );
     });
+    */
+
+    finishBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+
+  openConfirmModal({
+    title: "Terminer le Juz",
+    message: `Confirmez-vous avoir terminé le Juz n°${j.number} ?`,
+    confirmText: "Oui, terminé",
+    danger: true,
+    onConfirm: async () => {
+      const user = auth.currentUser;
+      if (!user || j.assignedTo !== user.uid) return;
+
+      await updateDoc(
+        doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(j.number)),
+        {
+          status: 'finished',
+          finishedAt: serverTimestamp()
+        }
+      );
+
+      showModalFeedback("✅ Juz marqué comme terminé", "success");
+    }
+  });
+});
+
 
     el.grid.appendChild(card);
   });
@@ -2309,6 +2367,7 @@ async function renderZikrFormulas(formules, sessionId) {
     const input = card.querySelector('.zikr-input');
     const validateBtn = card.querySelector('.zikr-validate-btn');
 
+/*
     validateBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
@@ -2336,7 +2395,7 @@ async function renderZikrFormulas(formules, sessionId) {
         c => c.uid === auth.currentUser.uid
       );
 
-      /*  A RETRAVAILLER
+      //  A RETRAVAILLER
       if (myContrib && myContrib.finished >= myContrib.value) {
         showModalFeedback(
           `ℹ️ Votre précédente contribution est terminée.
@@ -2344,7 +2403,7 @@ async function renderZikrFormulas(formules, sessionId) {
           "info",
           4500
         );
-      }*/
+      }
 
 
       // ✅ OK → validation Firestore
@@ -2356,25 +2415,66 @@ async function renderZikrFormulas(formules, sessionId) {
 
       input.value = '';
     });
+*/
 
+validateBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
 
-      card.querySelectorAll('.contrib-btn.btn-finish')
-  .forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
+  const raw = input.value.trim();
+  const value = Number(raw);
 
-      const row = btn.closest('.zikr-contributor');
-      const uid = row.dataset.uid;
+  if (!raw || Number.isNaN(value) || value <= 0) {
+    showModalFeedback("Veuillez entrer un nombre valide", "error");
+    return;
+  }
 
-      if (uid !== auth.currentUser.uid) {
-        showModalFeedback("❌ Vous ne pouvez terminer que votre contribution", "error");
-        return;
-      }
-
-      const formulaId = card.dataset.formuleId;
-      await finishZikrContribution(currentSessionId, formulaId, card);
-    });
+  openConfirmModal({
+    title: "Confirmer la contribution",
+    message: `Voulez-vous valider une contribution de ${value} pour « ${f.name} » ?`,
+    confirmText: "Valider",
+    onConfirm: async () => {
+      await validateZikrFormula(
+        currentSessionId,
+        f.id,
+        card
+      );
+    }
   });
+});
+
+
+      card.querySelectorAll('.contrib-btn.btn-finish').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+
+              openConfirmModal({
+                title: "Terminer la contribution",
+                message: "Confirmez-vous avoir terminé votre contribution ?",
+                confirmText: "Oui, terminé",
+                danger: true,
+                onConfirm: async () => {
+                  const row = btn.closest('.zikr-contributor');
+                  const uid = row.dataset.uid;
+
+                  if (uid !== auth.currentUser.uid) {
+                    showModalFeedback(
+                      "❌ Vous ne pouvez terminer que votre contribution",
+                      "error"
+                    );
+                    return;
+                  }
+
+                  const formulaId = card.dataset.formuleId;
+                  await finishZikrContribution(
+                    currentSessionId,
+                    formulaId,
+                    card
+                  );
+                }
+              });
+            });
+
+      });
 
 
     // 🔽 toggle contributeurs
