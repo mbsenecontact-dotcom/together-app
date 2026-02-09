@@ -33,28 +33,6 @@
       <div id="menuUserAvatar" class="avatar-sm">
         <img src="default.jpg" alt="Avatar utilisateur" class="avatar" />
       </div>
-      <div class="tab-menu-wrapper">
-                    <button
-                      id="moreTabsBtn"
-                      class="icon-btn"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                      aria-label="Autres actions">
-                      <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-
-
-                      <div id="moreTabsMenu" class="tab-menu hidden" role="menu">
-                        <button class="menu-item" id="utilitaire" role="menuitem">
-                          <i class="fa-solid fa-screwdriver-wrench"></i>
-                          Utilitaire
-                        </button>
-                        <button class="menu-item" id="publicite" role="menuitem">
-                          <i class="fa-solid fa-bullhorn"></i>
-                          Publicité
-                        </button>
-                      </div>
-       </div>
 
     </nav>
 
@@ -151,6 +129,7 @@
           <button id="filterZikr" class="tab-btn">Séries Zikr</button>
           <button id="filterMine" class="tab-btn">En cours</button>
           <button id="historique" class="tab-btn">Clôturées</button>
+          <button id="groupe" class="tab-btn">Groupes</button>
 
          
 
@@ -283,13 +262,19 @@
 
   <div id="bottomActionBtn" class="bottom-actions" style="display:none">
 
-    <!-- Rejoindre -->
-    <button id="joinWithCodeBtn" class="bottom-btn">
-      <span class="icon-circle">
-        <i class="fa-solid fa-users icon"></i>
-      </span>
-      <span class="label">Rejoindre</span>
-    </button>
+    <button  id="utilitaire" class="bottom-btn">
+        <span class="icon-circle">
+          <i class="fa-solid fa-screwdriver-wrench icon"></i>
+        </span>  
+        <span class="label">Outils</span>   
+   </button>
+
+    <button  id="publicite" class="bottom-btn">
+        <span class="icon-circle">
+          <i class="fa-solid fa-bullhorn icon"></i>
+        </span> 
+        <span class="label">Publicité</span>          
+   </button>                
 
     <!-- Nouvelle Campagne -->
     <button id="newSessionBtn" class="bottom-btn">
@@ -299,6 +284,14 @@
       <span class="label">Démarrer</span>
     </button>
     
+        <!-- Rejoindre -->
+    <button id="joinWithCodeBtn" class="bottom-btn">
+      <span class="icon-circle">
+        <i class="fa-solid fa-users icon"></i>
+        </span>
+      <span class="label">Rejoindre</span>
+    </button>
+    
     <!-- Paramètres -->
     <button id="profileEdition" class="bottom-btn">
       <span class="icon-circle">
@@ -306,6 +299,8 @@
       </span>
       <span class="label">Paramètre</span>
     </button>
+
+
 
   </div>
   </main>

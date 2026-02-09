@@ -539,18 +539,6 @@ async function areAllZikrFormulasFinished(sessionId) {
     return objectif > 0 && finished === objectif;
   });
 }
-const moreTabsBtn = document.getElementById("moreTabsBtn");
-const moreTabsMenu = document.getElementById("moreTabsMenu");
-
-moreTabsBtn.onclick = (e) => {
-  e.stopPropagation();
-  moreTabsMenu.classList.toggle("hidden");
-};
-
-// fermer au clic ailleurs
-document.addEventListener("click", () => {
-  moreTabsMenu.classList.add("hidden");
-});
 
 
 function openConsentModal(user, userRef) {
@@ -1073,45 +1061,30 @@ function renderSessions(list) {
     const row = document.createElement('div');
     row.className = 'session-row whatsapp open-session card';
     row.dataset.id = session.id;
-     const dateLabel = formatMessageDate(session.createdAt);
-
-row.innerHTML = `
-  <div class="session-avatar">
-    <img src="${session.adminPhotoURL || 'default.jpg'}">
-  </div>
-
-  <div class="session-content">
-    <div class="session-header">
-      <div class="session-title">${session.name}</div>
-      <div class="session-date">${dateLabel}</div>
-    </div>
-
-    <div class="session-meta">
-      ${session.startDate || ''} → ${session.endDate || ''}
-      • ${session.isPublic ? 'Publique' : 'Privée'}
-      ${session.status === 'closed' ? ' • Clôturée' : ' • Ouverte'}
-    </div>
-  </div>
-`;
-
-/*
+    const dateLabel = formatMessageDate(session.createdAt);
+    const start = formatDateFR(session.startDate);
+    const end = formatDateFR(session.endDate);
     row.innerHTML = `
-    <div class="session-date">
-      ${dateLabel}
-    </div>
-
       <div class="session-avatar">
         <img src="${session.adminPhotoURL || 'default.jpg'}">
       </div>
+
       <div class="session-content">
-        <div class="session-title">${session.name}</div>
+        <div class="session-header">
+          <div class="session-title">${session.name}</div>
+          <div class="session-date">${dateLabel}</div>
+        </div>
+
         <div class="session-meta">
-          ${session.startDate || ''} → ${session.endDate || ''}
+          ${start || ''} → ${end || ''}
           • ${session.isPublic ? 'Publique' : 'Privée'}
-          ${session.status === 'closed' ? ' • Clôturée' : 'Ouverte'}
+          ${session.status === 'closed' ? ' • Clôturée' : ' • Ouverte'}
         </div>
       </div>
-    `;*/
+    `;
+
+
+
 
     row.addEventListener('click', () => {
       showSessionPage();
@@ -1254,15 +1227,33 @@ async function loadSessionMeta(sessionId) {
   return snap.data();
 }
 
+function formatDateFR(date) {
+  if (!date) return '—';
+
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d)) return '—';
+
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+
 function applySessionHeader(meta) {
   sessionTitle.textContent = meta.name;
   stats.style.display = 'block';
 
+  const start = formatDateFR(meta.startDate);
+  const end = formatDateFR(meta.endDate);
+
   el.sessionMeta.textContent =
-    `${meta.startDate || '—'} → ${meta.endDate || '—'} • ` +
+    `${start} → ${end} • ` +
     `${meta.isPublic ? 'Publique' : 'Privée'} • ` +
     `${meta.status === 'closed' ? 'Clôturée' : 'Ouverte'}`;
 }
+
 
 //UI & share menu
 function showSessionView(session) {
@@ -3209,52 +3200,7 @@ async function userHasJuzInSession(sessionId, userId) {
   return !snap.empty;
 }
 
-/*
-function formatMessageDate(ts) {
-  if (!ts) return "";
-  const d = ts.toDate();
-  const now = new Date();
 
-  const diffTime = now - d;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  const options = { day: 'numeric', month: 'short' };
-  const weekday = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 7) return weekday[d.getDay()];
-  return `${weekday[d.getDay()]} ${d.toLocaleDateString('fr-FR', options)}`;
-}*/
-/*function formatSessionDate(ts) {
-  if (!ts) return "";
-
-  const d = ts.toDate();
-  const now = new Date();
-
-  const diffTime = now - d;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  const weekday = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-
-  // Aujourd’hui → heure
-  if (diffDays === 0) {
-    return d.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  // Hier
-  if (diffDays === 1) return "Hier";
-
-  // Dans la semaine
-  if (diffDays < 7) return weekday[d.getDay()];
-
-  // Plus ancien → AAAA-MM-DD
-  return d.toISOString().split("T")[0];
-}
-*/
 
 function formatMessageDate(ts) {
   if (!ts) return "";
@@ -3265,7 +3211,7 @@ function formatMessageDate(ts) {
   const diffTime = now - d;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  const weekday = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+  const weekday = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 
   // Aujourd’hui → heure
   if (diffDays === 0) {
@@ -3290,76 +3236,6 @@ function formatMessageDate(ts) {
 
   return `${day}/${month}/${year}`;
 }
-
-
-/*
-async function loadMessages(sessionId) {
-
-  // 🔒 sécurité
-  if (!(await userCanAccessDiscussion(currentSession))) return;
-
-  // 🔥 nettoyer ancien listener
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-    unsubscribeMessages = null;
-  }
-
-  const list = document.getElementById("messagesList");
-  list.innerHTML = "";
-
-  const q = query(
-    collection(db, SESSIONS_COLLECTION, sessionId, "messages"),
-    orderBy("createdAt", "asc")
-  );
-
-  let lastDate = "";
-
-  unsubscribeMessages = onSnapshot(q, snap => {
-    list.innerHTML = "";
-    lastDate = "";
-
-    snap.forEach(doc => {
-      const m = doc.data();
-      const isMe = auth.currentUser?.uid === m.authorId;
-
-      const dateStr = formatMessageDate(m.createdAt);
-      let dateBadge = "";
-  if (dateStr !== lastDate) {
-  const dateBadge = document.createElement("div");
-  dateBadge.className = "date-badge";
-  dateBadge.textContent = dateStr;
-  list.appendChild(dateBadge);
-  lastDate = dateStr;
-}
-
-
-
-const div = document.createElement("div");
-div.className = `message ${isMe ? "me" : "other"}`;
-
-div.innerHTML = `
-  <div class="message-body">
-    ${!isMe ? `<img class="avatar" src="${m.photoURL || 'default.jpg'}">` : ""}
-    <div class="message-bubble">
-      <div class="message-author">${m.authorPseudo}</div>
-      <div class="message-text">${m.text}</div>
-      <div class="message-time">
-        ${m.createdAt?.toDate().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit'
-        })}
-      </div>
-    </div>
-  </div>
-`;
-
-      list.appendChild(div);
-    });
-
-    list.scrollTop = list.scrollHeight;
-  });
-}
-*/
 
 async function loadMessages(sessionId, containerId = "messagesList") {
 
