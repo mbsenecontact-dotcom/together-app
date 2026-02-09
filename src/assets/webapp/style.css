@@ -1,6 +1,8 @@
-:root {  
+:root {
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
+
+  /* Couleurs */
   --bg: #fafafa;
   --card: #fff;
   --muted: #777;
@@ -9,19 +11,21 @@
   --wa-green: #25D366;
   --danger: #c0392b;
 
-  /* Z-INDEX */
-  --z-header: 100;
-  --z-session-actions: 80;
-  --z-session-menu: 900;
-  --z-bottom-bar: 1000;
-  --z-scroll-btn: 1100;
-  --z-modal: 2000;
-  --z-modal-feedback: 3000;
-  --z-homeConnectBtn: 5000;
-
+  /* Z-INDEX – hiérarchie claire */
+  --z-base: 1;                 /* contenu normal */
+  --z-header: 100;             /* header sticky */
+  --z-campagne-menu: 300;      /* menu ⋮ Campagnes */
+  --z-session-actions: 400;    /* ⋮ Juz / Zikr */
+  --z-session-menu: 500;       /* menus déroulants */
+  --z-bottom-bar: 600;         /* barre du bas */
+  --z-scroll-btn: 700;         /* bouton scroll */
+  --z-homeConnectBtn: 800;     /* bouton flottant */
+  --z-modal: 2000;             /* modales */
+  --z-modal-feedback: 3000;    /* toast / feedback */
 
   --bottom-bar-height: 50px;
 }
+
 
 
 * {
@@ -280,8 +284,13 @@ body.menu-open .header ~ main {
 body.modal-open main {
   pointer-events: none;
   user-select: none;
+}
+
+/* Le blur est déplacé sur un wrapper VISUEL */
+body.modal-open .page {
   filter: blur(0.6px);
 }
+
 
 
 body.modal-open {
@@ -289,10 +298,9 @@ body.modal-open {
 }
 
 
-main, #discussionSection {
-  padding-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom));
+main {
+  padding-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom) + 20px);
 }
-
 
 #juzListContainer {
   display: flex;
@@ -682,6 +690,8 @@ main, #discussionSection {
   height: var(--bottom-bar-height);
   z-index: var(--z-bottom-bar);
 }
+
+
 
 
 #homeConnectBtn {
@@ -1564,19 +1574,7 @@ main, #discussionSection {
 
 
 
-/* Bouton */
-.zikr-validate-btn {
-  width: 100%;
-  padding: 8px;
-  border-radius: 10px;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
 
-  background: #2ecc71;
-  color: #fff;
-}
 
 
 
@@ -1670,10 +1668,7 @@ input:disabled {
 
 
 
-.juz-actions button {
-  width: 100%;
-  display: block;
-}
+
 
 
 
@@ -1794,7 +1789,7 @@ input:disabled {
   height: 42px;
   border-radius: 50%;
   background: #25d366;
-  color: white;
+  color: #1405eb;
 }
 
 /* Formulaire toujours visible au-dessus de la barre d’action */
@@ -1908,11 +1903,7 @@ textarea::placeholder {
 }
 /* ===== Menu actions session ===== */
 
-.session-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-}
+
 
 /* bouton ⋮ */
 .icon-btn {
@@ -1951,11 +1942,14 @@ textarea::placeholder {
   pointer-events: none;   /* 🔥 bloque toute interception */
 }
 
+
+
 .session-actions {
-  position: absolute;   /* 🔥 limite le menu à cette zone */
+  position: absolute;
+  top: 12px;
+  right: 12px;
   z-index: var(--z-session-actions);
 }
-
 
 
 /* item */
@@ -2148,12 +2142,13 @@ textarea::placeholder {
 }
 
 
-
 .juz-actions button {
   flex: 1;
   padding: 10px;
   border-radius: 8px;
   font-weight: 600;
+  width: 100%;
+  display: block;
 }
 /*  PUB */
 .pub-card {
@@ -2425,7 +2420,9 @@ textarea::placeholder {
 .message.me {
   align-items: flex-end;
 }
-
+ .message.me .message-body {
+  justify-content: flex-end;
+}
 .message.other {
   align-items: flex-start;
 }
@@ -2459,6 +2456,7 @@ textarea::placeholder {
 .message.me .message-bubble {
   background: #dcf8c6; /* style WhatsApp */
   border-bottom-right-radius: 4px;
+  margin-left: auto;
 }
 
 /* Message autre */
@@ -2534,3 +2532,110 @@ textarea::placeholder {
 }
 
 
+#modalSendMessageBtn {
+  background-color: #3cb371;
+  border: none;
+}
+
+#modalSendMessageBtn:hover {
+  background-color: #85f3ad;
+}
+
+#modalSendMessageBtn:active {
+  transform: scale(0.95);
+}
+
+/* Icône SVG blanche */
+#modalSendMessageBtn svg {
+  fill: #fff;
+}
+
+
+/* Onglets icônes 
+.tab-btn.icon-tab {
+.tab-menu-wrapper {
+  position: relative;
+}
+*/
+
+.tab-menu-wrapper {
+  position: absolute;
+  top: 12px;          /* ajuste si besoin */
+  right: 12px;        /* 🔥 collé à droite */
+  z-index: 200;       /* au-dessus du contenu */
+}
+
+
+/* bouton ⋮ */
+.tab-btn.icon-tab {
+  width: 42px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* menu déroulant */
+.tab-menu {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  min-width: 180px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  z-index: 1000;
+}
+
+.tab-menu.hidden {
+  display: none;
+}
+
+.tab-btn.icon-tab i {
+  font-size: 16px;
+}
+
+/* Ligne titre + menu */
+.campagne-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Wrapper menu ⋮ */
+.campagne-header-row .tab-menu-wrapper {
+  position: relative; /* référence pour le menu */
+  z-index: var(--z-campagne-menu);
+}
+
+/* Bouton ⋮ */
+.campagne-header-row .icon-btn {
+  font-size: 18px;
+  color: #555;
+}
+
+/* Menu déroulant */
+.campagne-header-row .tab-menu {
+  position: absolute;
+  top: 28px;     /* juste sous le titre */
+  right: 0;
+  z-index: var(--z-session-menu);
+}
+
+#sessionsList {
+  margin-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom) + 24px);
+}
+
+/* 🔒 FIX bottom-actions quand une modale est ouverte */
+body.modal-open .bottom-actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateZ(0); /* force le GPU, évite les glitches */
+  pointer-events: none;
+  opacity: 0.4;
+}

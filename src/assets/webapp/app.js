@@ -539,6 +539,18 @@ async function areAllZikrFormulasFinished(sessionId) {
     return objectif > 0 && finished === objectif;
   });
 }
+const moreTabsBtn = document.getElementById("moreTabsBtn");
+const moreTabsMenu = document.getElementById("moreTabsMenu");
+
+moreTabsBtn.onclick = (e) => {
+  e.stopPropagation();
+  moreTabsMenu.classList.toggle("hidden");
+};
+
+// fermer au clic ailleurs
+document.addEventListener("click", () => {
+  moreTabsMenu.classList.add("hidden");
+});
 
 
 function openConsentModal(user, userRef) {
@@ -1061,7 +1073,7 @@ function renderSessions(list) {
     const row = document.createElement('div');
     row.className = 'session-row whatsapp open-session card';
     row.dataset.id = session.id;
-     const dateLabel = formatSessionDate(session.createdAt);
+     const dateLabel = formatMessageDate(session.createdAt);
 
 row.innerHTML = `
   <div class="session-avatar">
@@ -3244,7 +3256,7 @@ function formatMessageDate(ts) {
 }
 */
 
-function formatSessionDate(ts) {
+function formatMessageDate(ts) {
   if (!ts) return "";
 
   const d = ts.toDate();

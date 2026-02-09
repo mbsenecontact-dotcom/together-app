@@ -29,11 +29,34 @@
         <option value="en" data-flag="🇬🇧">🇬🇧 Anglais</option>
 
       </select>
-    
+                          <div class="tab-menu-wrapper">
+                    <button
+                      id="moreTabsBtn"
+                      class="icon-btn"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                      aria-label="Autres actions">
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+
+
+                      <div id="moreTabsMenu" class="tab-menu hidden" role="menu">
+                        <button class="menu-item" id="utilitaire" role="menuitem">
+                          <i class="fa-solid fa-screwdriver-wrench"></i>
+                          Utilitaire
+                        </button>
+                        <button class="menu-item" id="publicite" role="menuitem">
+                          <i class="fa-solid fa-bullhorn"></i>
+                          Publicité
+                        </button>
+                      </div>
+                 </div>
       <div id="menuUserAvatar" class="avatar-sm">
         <img src="default.jpg" alt="Avatar utilisateur" class="avatar" />
       </div>
     </nav>
+
+
     
   </header>
 
@@ -104,9 +127,13 @@
   
     <section id="dashboard" class="page" hidden>
       <div id="sessionsList" class="card">
-        <div class="campagne-header">
-          <h3>Campagnes</h3>
-        </div>
+
+        <div class="campagne-header campagne-header-row">
+        <h3>Campagnes</h3>
+
+
+      </div>
+
         <!--  🔍 Barre de recherche ajoutée ici  -->
         <div class="search-wrapper" style="position: relative; margin: 10px 0;">
           <span
@@ -122,8 +149,10 @@
           <button id="filterZikr" class="tab-btn">Séries Zikr</button>
           <button id="filterMine" class="tab-btn">En cours</button>
           <button id="historique" class="tab-btn">Clôturées</button>
-          <button id="utilitaire" class="tab-btn">Utilitaire</button>
-          <button id="publicite" class="tab-btn">Publicité</button>
+
+         
+
+
         </div>
         
 
