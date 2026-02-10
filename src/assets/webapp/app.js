@@ -25,6 +25,7 @@ const btnFilterAll = document.getElementById("filterAll");
 const btnFilterCoran = document.getElementById("filterCoran");
 const btnFilterZikr = document.getElementById("filterZikr");
 const btnFilterMine = document.getElementById("filterMine");
+const btnGroupes = document.getElementById("groupe");
 
 
 
@@ -33,7 +34,8 @@ const allTabs = [
   btnFilterCoran,
   btnFilterZikr,
   btnFilterMine,
-  btnHistorique
+  btnHistorique,
+  btnGroupes
 ];
 
 
@@ -161,17 +163,17 @@ const UTILITAIRE_DATA = {
 const PUBLICITE_DATA = {
   projets: [
     {
-      title: "Soutien à une Mosquée",
-      description: "Participez à la rénovation d’une mosquée locale.",
+      title: "ZAWIYA SEYDINA CHEIKH DE PARIS",
+      description: "Soutenez le projet d'acquisition de la future Zawiya Seydina Cheikh De Paris",
       link: "https://www.helloasso.com/associations/association-socioculturelle-cheikh-seydi-hadji-malick-sy-la-zawiya/formulaires/1",
       cta: "Faire un don",
       image: "/assets/pub/projetZawiyaParis.jpg"
     },
     {
-      title: "Aide humanitaire",
+      title: "ESPACE POUR",
       description: "Soutien alimentaire pour familles démunies.",
       link: "https://www.helloasso.com/associations/association-pour-la-mutualite-et-la-diversite-de-tours/collectes/projet-zawiya-a-tours",
-      cta: "Contribuer",
+      cta: "Faire un don",
       image: "/assets/pub/projetZawiyaTours.png"
     }
   ],
@@ -277,6 +279,11 @@ const sessionView = document.getElementById('sessionView');
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
 
+const createGroupBtn = document.getElementById("createGroupBtn");
+
+createGroupBtn?.addEventListener("click", () => {
+  openCreateGroupModal();
+});
 
 
   const menuDiscussion = document.getElementById("menuDiscussion");
@@ -359,6 +366,8 @@ menuDiscussion.onclick = async (e) => {
     document.querySelector('#menuUserAvatar img').src =
       user.photoURL || 'default.jpg';
   
+    await loadMyGroupsMap();
+    await loadGroupsContext();
     await loadSessions();
   });
 
@@ -419,7 +428,60 @@ menuDiscussion.onclick = async (e) => {
     });
   };
   
-  
+const closeSessionBtn = document.getElementById("closeSessionBtn");
+
+closeSessionBtn.onclick = async () => {
+  if (!requireAdmin(currentSession)) return;
+
+  // 🔒 fermer le menu
+  document.getElementById("sessionMenu").classList.add("hidden");
+  document
+    .getElementById("sessionMenuBtn")
+    .setAttribute("aria-expanded", "false");
+
+  // 🛑 DÉJÀ CLÔTURÉE
+  if (currentSession.status === "closed") {
+    showModalFeedback(
+      "Cette campagne est déjà clôturée.",
+      "info"
+    );
+    return;
+  }
+
+  // 🧿 ZIKR → toutes les formules terminées ?
+  if (
+    currentSession.typeCampagne === "zikr" &&
+    !(await areAllZikrFormulasFinished(currentSessionId))
+  ) {
+    showModalFeedback(
+      "Impossible de clôturer : toutes les formules de Zikr ne sont pas encore terminées",
+      "info"
+    );
+    return;
+  }
+
+  // 📖 CORAN → tous les juz terminés ?
+  if (currentSession.typeCampagne === "coran") {
+    const juzSnap = await getDocs(
+      collection(db, SESSIONS_COLLECTION, currentSessionId, "juz")
+    );
+
+    const allFinished = juzSnap.docs.every(
+      d => d.data()?.status === "finished"
+    );
+
+    if (!allFinished) {
+      showModalFeedback(
+        "La campagne n’est pas encore totalement terminée",
+        "info"
+      );
+      return;
+    }
+  }
+
+  confirmCloseSession();
+};
+
 
 
 })();
@@ -500,6 +562,134 @@ requestAnimationFrame(() => {
 
 }
 
+function openJoinGroupModal() {
+  const modal = openModal(`
+    <div class="modal-card card">
+      <h3>Rejoindre un groupe</h3>
+
+      <input id="groupInviteCode" placeholder="Code du groupe" />
+
+      <hr>
+
+      <div style="display:flex;gap:8px">
+        <button id="joinGroupOk" class="btn btn-success">Rejoindre</button>
+        <button id="joinGroupCancel" class="btn">Annuler</button>
+      </div>
+    </div>
+  `);
+
+  modal.querySelector("#joinGroupCancel").onclick =
+    () => closeModal(modal);
+
+  modal.querySelector("#joinGroupOk").onclick = async () => {
+    const code = modal.querySelector("#groupInviteCode").value.trim();
+    const user = auth.currentUser;
+
+    if (!code || !user) return;
+
+    const q = query(
+      collection(db, "groups"),
+      where("inviteCode", "==", code)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      showModalFeedback("Code invalide", "error");
+      return;
+    }
+
+    const groupDoc = snap.docs[0];
+
+    await updateDoc(groupDoc.ref, {
+      members: arrayUnion(user.uid)
+    });
+
+    closeModal(modal);
+    showModalFeedback("🎉 Groupe rejoint", "success");
+
+    await loadSessions();
+  };
+}
+
+
+
+function openCreateGroupModal() {
+  const modal = openModal(`
+    <div class="modal-card card">
+      <h3>Nouveau groupe</h3>
+
+      <input id="groupName" placeholder="Nom du groupe" />
+      <textarea id="groupDesc" placeholder="Description (optionnelle)"></textarea>
+
+      <hr>
+
+      <div style="display:flex;gap:8px">
+        <button id="createGroupOk" class="btn btn-success">Créer</button>
+        <button id="createGroupCancel" class="btn">Annuler</button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById("joinGroupBtn")
+  .addEventListener("click", openJoinGroupModal);
+
+  document.getElementById("createGroupCancel").onclick =
+    () => closeModal(modal);
+
+  document.getElementById("createGroupOk").onclick = async () => {
+    const user = auth.currentUser;
+    const name = document.getElementById("groupName").value.trim();
+    const desc = document.getElementById("groupDesc").value.trim();
+
+    if (!name) {
+      showModalFeedback("Nom requis", "error");
+      return;
+    }
+
+    await addDoc(collection(db, "groups"), {
+      name,
+      description: desc,
+      createdBy: user.uid,
+      admins: [user.uid],
+      members: [user.uid],
+       inviteCode: Math.random().toString(36).slice(2, 8).toUpperCase(),
+      createdAt: serverTimestamp()
+    });
+
+    closeModal(modal);
+    showModalFeedback("Groupe créé ✅", "success");
+    loadMyGroups();
+  };
+}
+
+async function createGroup(modal) {
+  const name = modal.querySelector("#groupNameInput").value.trim();
+  const description = modal.querySelector("#groupDescInput").value.trim();
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  if (!name) {
+    showModalFeedback("Donnez un nom au groupe", "error");
+    return;
+  }
+
+  await addDoc(collection(db, "groups"), {
+    name,
+    description,
+    createdBy: user.uid,
+    admins: [user.uid],
+    members: [user.uid],
+    createdAt: serverTimestamp()
+  });
+
+  closeModal(modal);
+  showModalFeedback("Groupe créé avec succès 🎉", "success");
+
+  // recharge la vue groupes
+  loadMyGroups();
+}
 
 async function openDiscussionFromMenu() {
   const canAccess = await userCanAccessDiscussion(currentSession);
@@ -831,10 +1021,14 @@ async function createSession({
   isPublic = true,
   invitedEmails = [],
   inviteCode = null,
-  formules = []           // 🆕 uniquement pour zikr
+  formules = [],          // 🆕 uniquement pour zikr
+  groupId = null   // 👈 AJOUT
 }) {
   const user = auth.currentUser;
   if (!user) throw new Error('Connectez-vous pour créer une session');
+
+
+
 
   const payload = {
     name,
@@ -843,6 +1037,7 @@ async function createSession({
     endDate: endDate || null,
     closeDate: closeDate || null,
     isPublic: !!isPublic,
+    groupId,
     invitedEmails: invitedEmails || [],
     inviteCode: inviteCode || null,
     createdBy: user.uid,
@@ -911,19 +1106,41 @@ async function createSession({
  *  - OR ones where current user's email is included in invitedEmails
  * If no user connected: return only public sessions.
  */
+
+
+function openGroup(group) {
+  const sessionsInGroup = allVisibleSessions.filter(
+    s => s.groupId === group.id && !s.isPublic
+  );
+
+  renderSessions(sessionsInGroup);
+}
+
+
 async function loadSessions() {
   allVisibleSessions = [];
   el.sessionsDiv.innerHTML = '';
 
-  const snaps = await getDocs(collection(db, SESSIONS_COLLECTION));
   const user = auth.currentUser;
   const userEmail = user?.email?.toLowerCase() || null;
 
+  // 🔥 récupérer les groupes de l'utilisateur
+  let userGroupIds = [];
+  if (user) {
+    const groupSnap = await getDocs(
+      query(collection(db, "groups"), where("members", "array-contains", user.uid))
+    );
+    userGroupIds = groupSnap.docs.map(d => d.id);
+  }
+
+  const snaps = await getDocs(collection(db, SESSIONS_COLLECTION));
+
   snaps.forEach(snap => {
     const d = snap.data();
-
     let visible = false;
-    if (d.isPublic) visible = true;
+
+    // 🟢 EXISTANT
+    //if (d.isPublic) visible = true;
     if (user && d.createdBy === user.uid) visible = true;
     if (
       userEmail &&
@@ -931,38 +1148,100 @@ async function loadSessions() {
       d.invitedEmails.map(x => x.toLowerCase()).includes(userEmail)
     ) visible = true;
 
+    // 🆕 NOUVEAU : via groupe
+    if (
+      user &&
+      d.groupId &&
+      userGroupIds.includes(d.groupId)
+    ) visible = true;
+
     if (!visible) return;
 
-    allVisibleSessions.push({
-      id: snap.id,
-      ...d
-    });
+    allVisibleSessions.push({ id: snap.id, ...d });
   });
 
-  // 🔥 UN SEUL rendu
   applyFilter();
 }
+
+async function loadMyGroups() {
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const q = query(
+    collection(db, "groups"),
+    where("members", "array-contains", user.uid)
+  );
+
+  const snap = await getDocs(q);
+
+ return snap.docs.map(d => {
+  const data = d.data();
+  return {
+    id: d.id,
+    ...data,
+    members: Array.isArray(data.members) ? data.members : [],
+    admins: Array.isArray(data.admins) ? data.admins : []
+  };
+});
+
+  
+}
+
+let groupsById = {};
+let myGroups = [];
+
+async function loadMyGroupsMap() {
+  const groups = await loadMyGroups();
+
+  groupsById = {};
+  groups.forEach(g => {
+    groupsById[g.id] = g.name;
+  });
+}
+
+async function loadGroupsContext() {
+  myGroups = await loadMyGroups();
+
+  groupsById = {};
+  myGroups.forEach(g => {
+    groupsById[g.id] = g;
+  });
+}
+
 
 async function applyFilter() {
   let list = [];
   const user = auth.currentUser;
-  updateCampaignTitle();
+
   for (const session of allVisibleSessions) {
 
-    /* ===== FILTRE PRINCIPAL (menu) ===== */
-    if (currentMainFilter === "coran" && session.typeCampagne !== "coran") continue;
-    if (currentMainFilter === "zikr" && session.typeCampagne !== "zikr") continue;
+    // ❌ sécurité : jamais de publiques
+    if (session.isPublic) continue;
 
+    /* ===== FILTRES PAR ONGLET ===== */
+
+    // 📘 Lecture Coran
+    if (currentMainFilter === "coran") {
+      if (session.typeCampagne !== "coran") continue;
+    }
+
+    // 🧿 Séries Zikr
+    if (currentMainFilter === "zikr") {
+      if (session.typeCampagne !== "zikr") continue;
+    }
+
+    // ⏳ En cours
     if (currentMainFilter === "mine") {
+      if (session.status === "closed") continue;
       if (!user) continue;
 
       let hasParticipated = false;
 
-      if (session.typeCampagne === "coran" && session.status !== "closed") {
+      if (session.typeCampagne === "coran") {
         hasParticipated = await userHasJuzInSession(session.id, user.uid);
       }
 
-      if (session.typeCampagne === "zikr" && session.status !== "closed") {
+      if (session.typeCampagne === "zikr") {
         const snap = await getDoc(
           doc(db, SESSIONS_COLLECTION, session.id, "zikrContributions", user.uid)
         );
@@ -972,34 +1251,25 @@ async function applyFilter() {
       if (!hasParticipated) continue;
     }
 
-    /* ===== ANCIENS FILTRES (état uniquement) ===== */
-    if (currentFilter === "toutes") {
-      list.push(session);
-      continue;
+    // 🗂️ Clôturées
+    if (currentFilter === "historique") {
+      if (session.status !== "closed") continue;
     }
 
-    if (!user) continue;
-
-    if (currentFilter === "lectures" && session.status !== "closed") {
-      list.push(session);
-    }
-
-    if (currentFilter === "historique" && session.status === "closed") {
-      list.push(session);
-    }
+    // 🟦 Toutes → rien de plus à filtrer
+    list.push(session);
   }
 
-  // 🔥 TRI : plus récente en premier
-list.sort((a, b) => {
-  const da = a.createdAt?.toDate?.() ?? 0;
-  const db = b.createdAt?.toDate?.() ?? 0;
-  return db - da; // DESC
-});
-
-renderSessions(list);
+  // 🔥 TRI
+  list.sort((a, b) => {
+    const da = a.createdAt?.toDate?.() ?? 0;
+    const db = b.createdAt?.toDate?.() ?? 0;
+    return db - da;
+  });
 
   renderSessions(list);
 }
+
 
 function activateTab(activeBtn) {
   allTabs.forEach(btn => btn.classList.remove("active"));
@@ -1048,7 +1318,183 @@ btnHistorique.onclick = e => {
 };
 
 
-function renderSessions(list) {
+
+btnGroupes.onclick = () => {
+  activateTab(btnGroupes);
+
+  renderSessionsGroupedByGroup(
+    myGroups,
+    allVisibleSessions
+  );
+};
+
+
+function renderGroups(groups) {
+  const container = document.getElementById("sessions");
+  container.innerHTML = "";
+
+  if (!groups.length) {
+    container.innerHTML = `<div class="empty-state">Aucun groupe</div>`;
+    return;
+  }
+
+  groups.forEach(group => {
+    const row = document.createElement("div");
+    row.className = "session-row card group-row";
+
+    row.innerHTML = `
+      <div class="session-content">
+        <div class="session-meta">
+          ${group.description || "Groupe de campagnes"}
+        </div>
+
+        <button class="btn btn-small btn-success add-campaign-btn">
+          + Nouvelle campagne
+        </button>
+      </div>
+    `;
+
+    // ouvrir le groupe
+    row.querySelector(".session-title").onclick = () => {
+      openGroup(group);
+    };
+
+    // ➕ ajouter campagne
+    row.querySelector(".add-campaign-btn").onclick = (e) => {
+      e.stopPropagation();
+      openCreateSessionModal({ groupId: group.id });
+    };
+
+    container.appendChild(row);
+  });
+}
+
+
+function renderSingleSessionRow(session) {
+  const row = document.createElement('div');
+  row.className = 'session-row whatsapp open-session card';
+  row.dataset.id = session.id;
+
+  const dateLabel = formatMessageDate(session.createdAt);
+  const start = formatDateFR(session.startDate);
+  const end = formatDateFR(session.endDate);
+
+  row.innerHTML = `
+    <div class="session-avatar">
+      <img src="${session.adminPhotoURL || 'default.jpg'}">
+    </div>
+
+    <div class="session-content">
+      <div class="session-header">
+        <div class="session-title">${session.name}</div>
+        <div class="session-date">${dateLabel}</div>
+      </div>
+
+      <div class="session-meta">
+        ${start || '—'} → ${end || '—'}
+        • ${session.typeCampagne === 'coran' ? '📘 Coran' : '🧿 Zikr'}
+        ${session.status === 'closed' ? ' • Clôturée' : ''}
+      </div>
+    </div>
+  `;
+
+  row.addEventListener('click', () => {
+    showSessionPage();
+    openSession(session);
+  });
+
+  return row;
+}
+
+
+function renderSessionsGroupedByGroup(groups, sessions) {
+  const container = document.getElementById("sessions");
+  container.innerHTML = "";
+
+  if (!groups.length) {
+    container.innerHTML =
+      `<div class="empty-state">Aucun groupe</div>`;
+    return;
+  }
+
+  groups.forEach(group => {
+    if (!isGroupMember(group)) return;
+
+    const sessionsInGroup = sessions.filter(
+      s => s.groupId === group.id && !s.isPublic
+    );
+
+    const groupBlock = document.createElement("div");
+    groupBlock.className = "group-block";
+
+    // 🔹 HEADER GROUPE
+    const header = document.createElement("div");
+    header.className = "group-header sticky";
+
+    const isAdmin = isGroupAdmin(group);
+
+    header.innerHTML = `
+      <div class="group-title">
+        👥 ${group.name}
+        <span class="badge ${isAdmin ? "admin" : "member"}">
+          ${isAdmin ? "Admin" : "Membre"}
+        </span>
+      </div>
+
+      <div class="group-actions">
+        ${
+          isAdmin
+            ? `<button class="btn small add-session">+</button>`
+            : ""
+        }
+        ${
+          isAdmin
+            ? `<button class="btn small add-member">👥</button>`
+            : ""
+        }
+      </div>
+    `;
+
+    groupBlock.appendChild(header);
+
+    // ➕ actions
+    header.querySelector(".add-session")?.addEventListener("click", () => {
+      openCreateSessionModal({ groupId: group.id });
+    });
+
+    header.querySelector(".add-member")?.addEventListener("click", () => {
+      openAddGroupMemberModal(group);
+    });
+
+    // 🟨 Groupe vide
+    if (sessionsInGroup.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state group-empty";
+      empty.textContent =
+        isAdmin
+          ? "Aucune campagne — vous pouvez en ajouter une"
+          : "Aucune campagne dans ce groupe";
+      groupBlock.appendChild(empty);
+    }
+
+    // 🟩 Campagnes
+    sessionsInGroup.forEach(session => {
+  const row = renderSingleSessionRow(session);
+  groupBlock.appendChild(row);
+});
+
+
+    container.appendChild(groupBlock);
+  });
+}
+
+
+
+
+
+
+function renderSessions(list, options = {}) {
+  const { showGroupName = false } = options;
   el.sessionsDiv.innerHTML = '';
 
 
@@ -1057,6 +1503,9 @@ function renderSessions(list) {
     return;
   }
 
+
+
+
   list.forEach(session => {
     const row = document.createElement('div');
     row.className = 'session-row whatsapp open-session card';
@@ -1064,24 +1513,34 @@ function renderSessions(list) {
     const dateLabel = formatMessageDate(session.createdAt);
     const start = formatDateFR(session.startDate);
     const end = formatDateFR(session.endDate);
+
+
+      const groupLabel =
+  showGroupName && session.groupId && groupsById[session.groupId]
+    ? `<div class="session-group">👥 ${groupsById[session.groupId]}</div>`
+    : "";
+
+
     row.innerHTML = `
-      <div class="session-avatar">
-        <img src="${session.adminPhotoURL || 'default.jpg'}">
-      </div>
+  <div class="session-avatar">
+    <img src="${session.adminPhotoURL || 'default.jpg'}">
+  </div>
 
-      <div class="session-content">
-        <div class="session-header">
-          <div class="session-title">${session.name}</div>
-          <div class="session-date">${dateLabel}</div>
-        </div>
+  <div class="session-content">
+    <div class="session-header">
+      <div class="session-title">${session.name}</div>
+      <div class="session-date">${dateLabel}</div>
+    </div>
 
-        <div class="session-meta">
-          ${start || ''} → ${end || ''}
-          • ${session.isPublic ? 'Publique' : 'Privée'}
-          ${session.status === 'closed' ? ' • Clôturée' : ' • Ouverte'}
-        </div>
-      </div>
-    `;
+    ${groupLabel}
+
+    <div class="session-meta">
+      ${start || ''} → ${end || ''}
+      • ${session.typeCampagne === 'coran' ? '📘 Coran' : '🧿 Zikr'}
+      ${session.status === 'closed' ? ' • Clôturée' : ' • En cours'}
+    </div>
+  </div>
+`;
 
 
 
@@ -1145,10 +1604,86 @@ const stats = document.getElementById('stats');
 
 // opensession() refactoring
 //helpers
+
+function requireGroupAdmin(group) {
+  if (!isGroupAdmin(group)) {
+    showModalFeedback(
+      "Action réservée aux administrateurs du groupe",
+      "error"
+    );
+    return false;
+  }
+  return true;
+}
+
+
+
+function isGroupMember(group) {
+  if (!group || !Array.isArray(group.members)) return false;
+  return group.members.includes(auth.currentUser.uid);
+}
+
+function isGroupAdmin(group) {
+  if (!group || !Array.isArray(group.admins)) return false;
+  return group.admins.includes(auth.currentUser.uid);
+}
+
+
+
+
 function formatNumber(n) {
   const value = Number(n) || 0;
   return new Intl.NumberFormat("fr-FR").format(value);
 }
+
+
+function openAddGroupMemberModal(group) {
+  if (!requireGroupAdmin(group)) return;
+
+  const modal = openModal(`
+    <div class="modal-card card">
+      <h3>Ajouter un membre</h3>
+
+      <input id="memberEmail" placeholder="Email du membre" />
+
+      <hr>
+
+      <div style="display:flex;gap:8px">
+        <button id="addMemberOk" class="btn btn-success">Ajouter</button>
+        <button id="addMemberCancel" class="btn">Annuler</button>
+      </div>
+    </div>
+  `);
+
+  modal.querySelector("#addMemberCancel").onclick =
+    () => closeModal(modal);
+
+  modal.querySelector("#addMemberOk").onclick = async () => {
+    const email = modal.querySelector("#memberEmail").value.trim().toLowerCase();
+
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      showModalFeedback("Utilisateur introuvable", "error");
+      return;
+    }
+
+    const userDoc = snap.docs[0];
+
+    await updateDoc(doc(db, "groups", group.id), {
+      members: arrayUnion(userDoc.id)
+    });
+
+    closeModal(modal);
+    showModalFeedback("Membre ajouté ✅", "success");
+  };
+}
+
 
 function renderMessagesIntoList(list, snap) {
   list.innerHTML = "";
@@ -1324,32 +1859,6 @@ function markClosedSession() {
     ?.classList.add('is-closed');
 }
 
-function setupCloseSessionHandler(session, meta, juzList) {
-  const allFinished = juzList.every(j => j?.status === 'finished');
-
-  el.closeSessionBtn.onclick = async () => {
-    if (!requireAdmin(currentSession)) return;
-
-    if (session.typeCampagne === 'zikr' &&
-        !(await areAllZikrFormulasFinished(currentSessionId))) {
-      showModalFeedback(
-        "Impossible de clôturer : toutes les formules de Zikr ne sont pas encore terminées",
-        "info"
-      );
-      return;
-    }
-
-    if (session.typeCampagne === 'coran' && !allFinished) {
-      showModalFeedback(
-        "La campagne n’est pas encore totalement terminée",
-        "info"
-      );
-      return;
-    }
-
-    confirmCloseSession();
-  };
-}
 
 function confirmCloseSession() {
   openConfirmModal({
@@ -1360,13 +1869,35 @@ function confirmCloseSession() {
     onConfirm: async () => {
       await updateDoc(
         doc(db, SESSIONS_COLLECTION, currentSessionId),
-        { status: 'closed', closedAt: serverTimestamp() }
+        {
+          status: "closed",
+          closedAt: serverTimestamp()
+        }
       );
-      showModalFeedback("Campagne clôturée", "success");
+
+      // 🔄 1️⃣ recharger les sessions
       await loadSessions();
+
+      // 🔄 2️⃣ recharger la session courante
+      const updated = allVisibleSessions.find(
+        s => s.id === currentSessionId
+      );
+
+      if (updated) {
+        currentSession = updated;
+
+        // 🔥 MAJ header + statut
+        applySessionHeader(updated);
+
+        // 🔒 UI campagne clôturée
+        markClosedSession();
+      }
+
+      showModalFeedback("Campagne clôturée ✅", "success");
     }
   });
 }
+
 
 
 
@@ -1384,8 +1915,6 @@ async function openSession(session) {
   setupShareMenu(meta);
   showSessionView(session);
 
-  //const juzList = await loadJuzList(session.id);
-  //renderGrid(juzList);
   initSessionTabs(session);
   scrollToSessionTitle();
 
@@ -1395,7 +1924,6 @@ async function openSession(session) {
     markClosedSession();
   }
 
-  //setupCloseSessionHandler(session, meta, juzList);
 }
 
 
@@ -1731,29 +2259,8 @@ function renderGrid(juzData) {
       contribsBox.classList.toggle('hidden', isOpen);
     });
 
-    /*
-    assignBtn?.addEventListener('click', async (e) => {
-      e.stopPropagation();
-
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const userSnap = await getDoc(doc(db, 'users', user.uid));
-      const pseudo = userSnap.data()?.pseudo || 'Utilisateur';
-
-      await updateDoc(
-        doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(j.number)),
-        {
-          status: 'assigned',
-          assignedTo: user.uid,
-          assignedPseudo: pseudo,
-          assignedAt: serverTimestamp()
-        }
-      );
-      //await refreshDiscussionAccess();
-
-    });
-    */
+  
+    
 
     assignBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1784,22 +2291,7 @@ function renderGrid(juzData) {
   });
 });
 
-/*
-    finishBtn?.addEventListener('click', async (e) => {
-      e.stopPropagation();
 
-      const user = auth.currentUser;
-      if (!user || j.assignedTo !== user.uid) return;
-
-      await updateDoc(
-        doc(db, SESSIONS_COLLECTION, currentSessionId, 'juz', String(j.number)),
-        {
-          status: 'finished',
-          finishedAt: serverTimestamp()
-        }
-      );
-    });
-    */
 
     finishBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1837,16 +2329,45 @@ function renderGrid(juzData) {
   
 }
 
+async function populateGroupSelect(select, selectedGroupId = null) {
+  const groups = await loadMyGroups();
+
+  groups.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g.id;
+    opt.textContent = g.name;
+
+    if (g.id === selectedGroupId) {
+      opt.selected = true;
+    }
+
+    select.appendChild(opt);
+  });
+}
+
+
+
 /* ---------- UI: create session modal ---------- */
 function openCreateSessionModal(session = null){
 
-  const isEditMode = !!session;
+
+  const isEditMode = !!session?.id;
+  const forcedGroupId = session?.groupId || null;
+
 
   const modal = openModal(`
     <div class="modal-card card" style="max-width:420px;width:100%">
       <h3>${isEditMode ? "Modifier la campagne" : "Nouvelle Campagne"}</h3>
 
       <input id="ns_name" placeholder="Nom de la campagne" />
+      <label>
+  Groupe :
+  <select id="ns_group">
+    <option value="">— Aucun —</option>
+  </select>
+</label>
+
+
       <label style="margin-top:8px;display:block">
     Type de campagne :
     <select id="ns_type">
@@ -1907,6 +2428,25 @@ function openCreateSessionModal(session = null){
         <button id="ns_cancel" class="btn">Annuler</button>
       </div>
     </div>`);
+
+      const groupSelect = modal.querySelector("#ns_group");
+      if (groupSelect && forcedGroupId) {
+        groupSelect.value = forcedGroupId;
+        groupSelect.disabled = true; // 🔒 verrouillé
+        populateGroupSelect(groupSelect, forcedGroupId);
+      }
+if (groupSelect && forcedGroupId) {
+  const label = document.createElement("small");
+  label.style.color = "#666";
+  label.style.display = "block";
+  label.style.marginTop = "4px";
+  label.textContent = "Cette campagne sera ajoutée à ce groupe";
+
+  groupSelect.parentNode.appendChild(label);
+}
+
+
+
 
     if (isEditMode) {
       modal.querySelector('#ns_name').value = session.name || '';
@@ -2049,6 +2589,7 @@ function openCreateSessionModal(session = null){
 
 
       let sessionId = null;
+      const groupId = modal.querySelector("#ns_group")?.value || null;
 
       if (isEditMode) {
          await updateDoc(
@@ -2073,7 +2614,8 @@ function openCreateSessionModal(session = null){
           isPublic,
           invitedEmails: parseCSVemails(invitedInput.value),
           inviteCode,
-          formules
+          formules,
+          groupId 
         });
       }
 
@@ -2081,14 +2623,16 @@ function openCreateSessionModal(session = null){
       closeModal(modal);
       await loadSessions();
 
-      const session = allVisibleSessions.find(s => s.id === sessionId);
+     // const session = allVisibleSessions.find(s => s.id === sessionId);
+      const createdSession = allVisibleSessions.find(s => s.id === sessionId);
 
-      if (!session) {
+
+      if (!createdSession) {
         showModalFeedback("Session introuvable après création", "error");
         return;
       }
 
-      await openSession(session);
+      await openSession(createdSession);
 
       // 🔔 Feedback APRÈS ouverture (UX parfaite)
       if (inviteCode) {
@@ -2367,55 +2911,7 @@ async function renderZikrFormulas(formules, sessionId) {
     const input = card.querySelector('.zikr-input');
     const validateBtn = card.querySelector('.zikr-validate-btn');
 
-/*
-    validateBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
 
-      const raw = input.value.trim();
-      const value = Number(raw);
-
-      // ❌ Champ vide
-      if (!raw) {
-        showModalFeedback("Veuillez entrer un nombre", "error");
-        return;
-      }
-
-      // ❌ Pas un nombre
-      if (Number.isNaN(value)) {
-        showModalFeedback("Valeur invalide", "error");
-        return;
-      }
-
-      // ❌ Négatif ou zéro
-      if (value <= 0) {
-        showModalFeedback("Le nombre doit être supérieur à zéro", "error");
-        return;
-      }
-      const myContrib = contributions.find(
-        c => c.uid === auth.currentUser.uid
-      );
-
-      //  A RETRAVAILLER
-      if (myContrib && myContrib.finished >= myContrib.value) {
-        showModalFeedback(
-          `ℹ️ Votre précédente contribution est terminée.
-  Une nouvelle contribution va être ajoutée.`,
-          "info",
-          4500
-        );
-      }
-
-
-      // ✅ OK → validation Firestore
-      await validateZikrFormula(
-        currentSessionId,
-        f.id,
-        card
-      );
-
-      input.value = '';
-    });
-*/
 
 validateBtn.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -2875,26 +3371,6 @@ searchInput.addEventListener("input", () => {
 });
 
 
-/* ---------- Filtres campagnes ---------- */
-function updateCampaignTitle() {
-/*
-  switch (currentMainFilter) {
-    case "coran":
-      campaignTitle.textContent = "Coran...";
-      break;
-    case "zikr":
-      campaignTitle.textContent = "Zikr...";
-      break;
-    case "mine":
-      campaignTitle.textContent = "Mes participations...";
-      break;
-    case "all":
-        campaignTitle.textContent = "Toutes les campagnes...";
-        break;
-    default:
-      campaignTitle.textContent = "Mon historique...";
-  }*/
-}
 
 
 
@@ -2928,39 +3404,24 @@ const tabPartenaires = document.getElementById("tabPartenaires");
   });
 });
 
-/*
+
+
+let pubCarouselTimer = null;
+let pubCarouselIndex = 0;
+let pubCarouselTrack = null;
+let pubCarouselTotal = 0;
+
+
 function renderPublicite(type) {
   const container = document.getElementById("publiciteContent");
   container.innerHTML = "";
+  container.classList.add("pub-carousel");
 
   const data = PUBLICITE_DATA[type] || [];
+  if (!data.length) return;
 
-  data.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "pub-card-wa";
-
-    card.innerHTML = `
-      <div class="pub-img-wrapper">
-        <img src="${item.image}" alt="${item.title}">
-        <div class="pub-overlay-text">
-          ${item.description}
-        </div>
-      </div>
-    `;
-
-    card.onclick = () => {
-      if (item.link) window.open(item.link, "_blank");
-    };
-
-    container.appendChild(card);
-  });
-}
-*/
-function renderPublicite(type) {
-  const container = document.getElementById("publiciteContent");
-  container.innerHTML = "";
-
-  const data = PUBLICITE_DATA[type] || [];
+  const track = document.createElement("div");
+  track.className = "pub-carousel-track";
 
   data.forEach(item => {
     const card = document.createElement("div");
@@ -2970,16 +3431,10 @@ function renderPublicite(type) {
       <div class="pub-image">
         <img src="${item.image}" alt="${item.title}">
       </div>
-
       <div class="pub-body">
         <h4>${item.title}</h4>
         <p>${item.description}</p>
-
-        ${item.cta ? `
-          <button class="btn btn-primary">
-            ${item.cta}
-          </button>
-        ` : ""}
+        ${item.cta ? `<button class="btn btn-primary">${item.cta}</button>` : ""}
       </div>
     `;
 
@@ -2987,10 +3442,98 @@ function renderPublicite(type) {
       card.onclick = () => window.open(item.link, "_blank");
     }
 
-    container.appendChild(card);
+    track.appendChild(card);
   });
+
+  // ⬅️➡️ boutons
+  const prevBtn = document.createElement("button");
+  prevBtn.className = "pub-nav-btn pub-nav-prev";
+  prevBtn.innerHTML = "❮";
+
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "pub-nav-btn pub-nav-next";
+  nextBtn.innerHTML = "❯";
+
+  prevBtn.onclick = () => moveCarousel(-1);
+  nextBtn.onclick = () => moveCarousel(1);
+
+  container.appendChild(track);
+  container.appendChild(prevBtn);
+  container.appendChild(nextBtn);
+
+  // init
+  pubCarouselIndex = 0;
+  pubCarouselTrack = track;
+  pubCarouselTotal = data.length;
+
+  applyCarouselPosition();
+  startPubCarousel();
+  enableSwipe(container);
 }
 
+
+
+
+function moveCarousel(dir) {
+  pubCarouselIndex += dir;
+
+  if (pubCarouselIndex < 0) {
+    pubCarouselIndex = pubCarouselTotal - 1;
+  }
+
+  if (pubCarouselIndex >= pubCarouselTotal) {
+    pubCarouselIndex = 0;
+  }
+
+  applyCarouselPosition();
+  restartPubCarousel();
+}
+
+function applyCarouselPosition() {
+  pubCarouselTrack.style.transform =
+    `translateX(-${pubCarouselIndex * 100}%)`;
+}
+
+function startPubCarousel() {
+  stopPubCarousel();
+  pubCarouselTimer = setInterval(() => {
+    moveCarousel(1);
+  }, 4000);
+}
+
+function stopPubCarousel() {
+  if (pubCarouselTimer) {
+    clearInterval(pubCarouselTimer);
+    pubCarouselTimer = null;
+  }
+}
+
+function restartPubCarousel() {
+  stopPubCarousel();
+  startPubCarousel();
+}
+
+function enableSwipe(container) {
+  let startX = 0;
+  let deltaX = 0;
+
+  container.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    stopPubCarousel();
+  }, { passive: true });
+
+  container.addEventListener("touchmove", e => {
+    deltaX = e.touches[0].clientX - startX;
+  }, { passive: true });
+
+  container.addEventListener("touchend", () => {
+    if (Math.abs(deltaX) > 50) {
+      moveCarousel(deltaX > 0 ? -1 : 1);
+    }
+    deltaX = 0;
+    startPubCarousel();
+  });
+}
 
 
 function renderUtilitaire(type) {
