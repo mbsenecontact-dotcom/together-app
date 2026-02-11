@@ -279,11 +279,6 @@ const sessionView = document.getElementById('sessionView');
   // by design: DO NOT auto-create default session or populate DB
   // only show sessions after login
 
-const createGroupBtn = document.getElementById("createGroupBtn");
-
-createGroupBtn?.addEventListener("click", () => {
-  openCreateGroupModal();
-});
 
 
   const menuDiscussion = document.getElementById("menuDiscussion");
@@ -1409,7 +1404,9 @@ function renderSingleSessionRow(session) {
 
 function renderSessionsGroupedByGroup(groups, sessions) {
   const container = document.getElementById("sessions");
-  container.innerHTML = "";
+  container.innerHTML = `<button id="createGroupBtn" class="btn btn-success">
+            Créer un groupe
+          </button>`;
 
   if (!groups.length) {
     container.innerHTML =
@@ -1490,7 +1487,11 @@ details.querySelector(".add-member")?.addEventListener("click", () => {
   openAddGroupMemberModal(group);
 });
 
+const createGroupBtn = document.getElementById("createGroupBtn");
 
+createGroupBtn?.addEventListener("click", () => {
+  openCreateGroupModal();
+});
     const title = header.querySelector(".group-title");
 
 title.style.cursor = "pointer";
@@ -2975,6 +2976,7 @@ async function renderZikrFormulas(formules, sessionId) {
   <td colspan="2">
     <div class="zikr-input-wrapper">
       <input
+        name="${f.id}"
         type="number"
         min="1"
         max="${reste}"

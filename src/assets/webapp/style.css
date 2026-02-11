@@ -291,15 +291,25 @@ body.menu-open .header ~ main {
   user-select: none
 }
 
+/*
 body.modal-open main {
   pointer-events: none;
   user-select: none;
 }
+*/
+body.modal-open .page {
+  pointer-events: none;
+  user-select: none;
+}
 
-/* Le blur est déplacé sur un wrapper VISUEL */
+body.modal-open .modal {
+  pointer-events: auto;
+}
+
+/**
 body.modal-open .page {
   filter: blur(0.6px);
-}
+}*/
 
 
 
