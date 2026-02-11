@@ -317,10 +317,14 @@ body.modal-open {
   overflow: auto;
 }
 
+html, body {
+  height: 100%;
+}
 
 main {
-  padding-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom) + 20px);
+  padding-bottom: calc(var(--bottom-bar-height) + 24px);
 }
+
 
 #juzListContainer {
   display: flex;
@@ -667,17 +671,6 @@ main {
 
 
 
-.action-btn {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  background: none;
-  font-size: 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
 
 
 #discussionSection {
@@ -699,17 +692,25 @@ main {
 .bottom-actions {
   pointer-events: auto;
   touch-action: manipulation;
+
   position: fixed;
-  bottom: 0; /* ou 8–16px bottom: env(safe-area-inset-bottom); */
-  padding-bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
+
+  bottom: 0;
+  
   display: flex;
   background: #fff;
   border-top: 1px solid #e5e5e5;
   height: var(--bottom-bar-height);
+
+  /* ✅ ESPACE DE SÉCURITÉ ANDROID */
+  padding-bottom: max(env(safe-area-inset-bottom), 14px);
+
+
   z-index: var(--z-bottom-bar);
 }
+
 
 
 
@@ -2775,3 +2776,170 @@ body.modal-open .bottom-actions {
 }
 
 
+
+
+
+
+
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+}
+
+
+
+
+
+
+
+
+
+
+/*
+.action-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+*/
+
+.action-btn.edit {
+  background: #f39c12;
+}
+
+.action-btn.delete {
+  background: #e74c3c;
+}
+
+
+
+
+
+.members-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.members-table th {
+  text-align: left;
+  font-weight: 600;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.members-table td {
+  padding: 0;
+}
+
+/* SWIPE STRUCTURE */
+
+.swipe-container {
+  position: relative;
+  overflow: hidden;
+}
+
+
+
+.member-col {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-col.role {
+  text-align: center;
+}
+
+.member-col.actions-placeholder {
+  width: 40px;
+}
+
+/* SWIPE ACTIONS */
+
+
+.action-btn {
+  flex: 1;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.action-btn.edit-role {
+  background: #f59e0b;
+}
+
+.action-btn.remove-member {
+  background: #ef4444;
+}
+
+
+
+.swipe-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-content {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 120px;
+  align-items: center;
+  padding: 14px;
+  background: #fff;
+  transition: transform 0.25s ease;
+  z-index: 2;
+}
+
+.swipe-action {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-left {
+  right: 0;
+  background: #2196f3;
+}
+
+.swipe-right {
+  left: 0;
+  background: #e53935;
+}
+
+.swipe-action button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+
+
+
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-between;
+  z-index: 0;
+}
+
+.swipe-content {
+  position: relative;
+  background: white;
+  transition: transform 0.3s ease;
+  z-index: 2;
+}

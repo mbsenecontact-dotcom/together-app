@@ -16,7 +16,7 @@ import {
 /* ---------- Elements ---------- */
 const searchInput = document.getElementById("searchCampaignInput");
 const sessionsContainer = document.getElementById("sessions");
-const btnHistorique = document.getElementById("historique");
+//const btnHistorique = document.getElementById("historique");
 const campaignTitle = document.getElementById("campaignTitle");
 const profileEditionLink = document.getElementById("profileEdition");
 const menuUserAvatar = document.getElementById("menuUserAvatar");
@@ -24,7 +24,7 @@ const menuUserAvatar = document.getElementById("menuUserAvatar");
 const btnFilterAll = document.getElementById("filterAll");
 const btnFilterCoran = document.getElementById("filterCoran");
 const btnFilterZikr = document.getElementById("filterZikr");
-const btnFilterMine = document.getElementById("filterMine");
+//const btnFilterMine = document.getElementById("filterMine");
 const btnGroupes = document.getElementById("groupe");
 
 
@@ -33,8 +33,8 @@ const allTabs = [
   btnFilterAll,
   btnFilterCoran,
   btnFilterZikr,
-  btnFilterMine,
-  btnHistorique,
+ // btnFilterMine,
+ // btnHistorique,
   btnGroupes
 ];
 
@@ -170,8 +170,8 @@ const PUBLICITE_DATA = {
       image: "/assets/pub/projetZawiyaParis.jpg"
     },
     {
-      title: "ESPACE POUR",
-      description: "Soutien alimentaire pour familles démunies.",
+      title: "ESPACE POUR MUTUALITÉ ET LA DIVERSITÉ",                                                                                                            
+      description: "Soutenez la ville de Tours pour son projet d'acquisition d'espace fraternel",
       link: "https://www.helloasso.com/associations/association-pour-la-mutualite-et-la-diversite-de-tours/collectes/projet-zawiya-a-tours",
       cta: "Faire un don",
       image: "/assets/pub/projetZawiyaTours.png"
@@ -1247,9 +1247,11 @@ async function applyFilter() {
     }
 
     // 🗂️ Clôturées
+   /*
     if (currentFilter === "historique") {
       if (session.status !== "closed") continue;
     }
+    */
 
     // 🟦 Toutes → rien de plus à filtrer
     list.push(session);
@@ -1294,14 +1296,16 @@ btnFilterZikr.onclick = e => {
   applyFilter();
 };
 
+/*
 btnFilterMine.onclick = e => {
   activateTab(e.target);
   currentMainFilter = "mine";
   currentFilter = "toutes";
   applyFilter();
 };
+*/
 
-
+/*
 btnHistorique.onclick = e => {
   activateTab(e.target);
 
@@ -1310,7 +1314,7 @@ btnHistorique.onclick = e => {
   currentFilter = "historique";
 
   applyFilter();
-};
+};*/
 
 
 
@@ -1441,6 +1445,7 @@ function renderSessionsGroupedByGroup(groups, sessions) {
 
     const details = document.createElement("div");
 details.className = "group-details hidden";
+/*
 details.innerHTML = `
   <div class="group-description">
     ${group.description || "Aucune description"}
@@ -1475,7 +1480,42 @@ details.innerHTML = `
       </tbody>
     </table>
   </div>
+`;*/
+
+details.innerHTML = `
+  <div class="group-description">
+    ${group.description || "Aucune description"}
+  </div>
+
+  <div class="group-members">
+    <div class="members-header">
+      <h4>Membres</h4>
+
+      ${isAdmin ? `
+        <div class="group-actions">
+          <button class="btn small add-session">+ Campagne</button>
+          <button class="btn small add-member">👥 Ajouter</button>
+        </div>
+      ` : ""}
+    </div>
+
+    <table class="members-table">
+      <thead>
+        <tr>
+          <th>Pseudo</th>
+          <th>Email</th>
+          <th>Rôle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="3">Chargement…</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 `;
+
 groupBlock.appendChild(details);
 
 
@@ -1495,7 +1535,7 @@ createGroupBtn?.addEventListener("click", () => {
     const title = header.querySelector(".group-title");
 
 title.style.cursor = "pointer";
-
+/*
 title.addEventListener("click", async () => {
   const isOpen = !details.classList.contains("hidden");
 
@@ -1508,9 +1548,38 @@ title.addEventListener("click", async () => {
 
   if (!isOpen) {
     await loadGroupMembers(group, details);
+    enable_Swipe();
   }
 });
+*/
 
+title.addEventListener("click", async () => {
+  const isOpen = !details.classList.contains("hidden");
+
+  // Fermer les autres groupes + reset swipe
+  document.querySelectorAll(".group-details").forEach(d => {
+    if (d !== details) {
+      d.classList.add("hidden");
+
+      // 🔥 RESET SWIPE
+      d.querySelectorAll(".swipe-content").forEach(row => {
+        row.style.transform = "translateX(0)";
+      });
+    }
+  });
+
+  details.classList.toggle("hidden");
+
+  if (!isOpen) {
+    await loadGroupMembers(group, details);
+    enable_Swipe();
+  } else {
+    // 🔥 si on referme → reset
+    details.querySelectorAll(".swipe-content").forEach(row => {
+      row.style.transform = "translateX(0)";
+    });
+  }
+});
 
     // 🟨 Groupe vide
     if (sessionsInGroup.length === 0) {
@@ -4032,64 +4101,86 @@ async function loadGroupMembers(group, details) {
   const tbody = details.querySelector(".members-table tbody");
   tbody.innerHTML = "";
 
-  for (const uid of group.members) {
-    const snap = await getDoc(doc(db, "users", uid));
-    if (!snap.exists()) continue;
+ for (const uid of group.members) {
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) continue;
 
-    const user = snap.data();
-    const isAdmin = Array.isArray(group.admins) && group.admins.includes(uid);
-    const canEdit = isGroupAdmin(group);
-    const isSelf = uid === auth.currentUser.uid;
+  const user = snap.data();
+  const isAdmin = Array.isArray(group.admins) && group.admins.includes(uid);
+  const canEdit = isGroupAdmin(group);
 
-    const tr = document.createElement("tr");
+  const isSelf = user.uid === auth.currentUser.uid;
 
-    /*tr.innerHTML = `
-      <td>${user.pseudo || "—"}</td>
-      <td>${user.email || "—"}</td>
-      <td>
-        <span class="badge ${isAdmin ? "admin" : "member"}">
-          ${isAdmin ? "Admin" : "Membre"}
-        </span>
-      </td>
-    `;*/
+const adminCount = group.members
+  .filter(m => m.role === "admin")
+  .length;
 
-    tr.innerHTML = `
-  <td>${user.pseudo || "—"}</td>
-  <td>${user.email || "—"}</td>
-  <td>
-    <span class="badge ${isAdmin ? "admin" : "member"}">
-      ${isAdmin ? "Admin" : "Membre"}
-    </span>
-  </td>
-  <td>
-    ${canEdit ? `
-      <button class="btn small edit-role">✏️</button>
-      ${!isSelf ? `<button class="btn small danger remove-member">🗑️</button>` : ""}
-    ` : ""}
-  </td>
-`;
+const isTargetAdmin = user.role === "admin";
 
+const canRemove =
+  isGroupAdmin(group) &&
+  !isSelf &&
+  (
+    !isTargetAdmin || adminCount > 1
+  );
+
+
+
+
+  const tr = document.createElement("tr");
+  tr.className = "swipe-row";
+
+  tr.innerHTML = `
+    <td colspan="3">
+      <div class="swipe-wrapper">
+       
+      ${canEdit ? `
+          <div class="swipe-action swipe-left">
+            <button class="edit-role">✏️</button>
+          </div>
+      ` : ""}
+      ${canRemove ? `
+         <div class="swipe-action swipe-right">
+           <button class="remove-member">🗑</button>
+        </div>
+` : ""}
+        <div class="swipe-content">
+          <div class="member-col pseudo">${user.pseudo || "—"}</div>
+          <div class="member-col email">${user.email || "—"}</div>
+          <div class="member-col role">
+            <span class="badge ${isAdmin ? "admin" : "member"}">
+              ${isAdmin ? "Admin" : "Membre"}
+            </span>
+          </div>
+          <div class="member-col actions-placeholder"></div>
+        </div>
+
+      </div>
+    </td>
+  `;
+
+  // 🔧 EVENTS
   tr.querySelector(".edit-role")?.addEventListener("click", () => {
-  openEditMemberRoleModal(group, uid, isAdmin);
-});
-
-tr.querySelector(".remove-member")?.addEventListener("click", async () => {
-  openConfirmModal({
-    title: "Supprimer le membre",
-    message: "Ce membre sera retiré du groupe.",
-    danger: true,
-    onConfirm: async () => {
-      await updateDoc(doc(db, "groups", group.id), {
-        members: group.members.filter(id => id !== uid),
-        admins: group.admins.filter(id => id !== uid)
-      });
-
-      showModalFeedback("Membre supprimé ✅", "success");
-    }
+    openEditMemberRoleModal(group, uid, isAdmin);
   });
-});
-    tbody.appendChild(tr);
-  }
+
+  tr.querySelector(".remove-member")?.addEventListener("click", () => {
+    openConfirmModal({
+      title: "Supprimer le membre",
+      message: "Ce membre sera retiré du groupe.",
+      danger: true,
+      onConfirm: async () => {
+        await updateDoc(doc(db, "groups", group.id), {
+          members: group.members.filter(id => id !== uid),
+          admins: group.admins.filter(id => id !== uid)
+        });
+        showModalFeedback("Membre supprimé ✅", "success");
+      }
+    });
+  });
+
+  tbody.appendChild(tr);
+}
 
   if (!tbody.children.length) {
     tbody.innerHTML = `
@@ -4104,6 +4195,82 @@ tr.querySelector(".remove-member")?.addEventListener("click", async () => {
 
 }
 
+/*
+function enable_Swipe() {
+  let startX = 0;
+
+  document.querySelectorAll(".swipe-content").forEach(el => {
+    el.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+    });
+
+    el.addEventListener("touchmove", e => {
+      const diff = startX - e.touches[0].clientX;
+
+      if (diff > 50) {
+        el.style.transform = "translateX(-120px)";
+      }
+
+      if (diff < -50) {
+        el.style.transform = "translateX(0)";
+      }
+    });
+  });
+}
+*/
+/*
+function enable_Swipe() {
+  document.querySelectorAll(".swipe-content").forEach(el => {
+    let startX = 0;
+
+    el.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+    });
+
+    el.addEventListener("touchmove", e => {
+      const diff = startX - e.touches[0].clientX;
+
+      if (diff > 60) {
+        el.style.transform = "translateX(-120px)";
+      }
+
+      if (diff < -60) {
+        el.style.transform = "translateX(0)";
+      }
+    });
+  });
+}
+*/
+
+function enable_Swipe() {
+  document.querySelectorAll(".swipe-content").forEach(el => {
+    let startX = 0;
+
+    el.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+    });
+
+    el.addEventListener("touchend", e => {
+      const endX = e.changedTouches[0].clientX;
+      const diff = endX - startX;
+
+      // 👉 Swipe vers droite = Supprimer
+      if (diff > 60) {
+        el.style.transform = "translateX(120px)";
+      }
+
+      // 👉 Swipe vers gauche = Modifier
+      if (diff < -60) {
+        el.style.transform = "translateX(-120px)";
+      }
+
+      // Petit swipe → reset
+      if (Math.abs(diff) < 60) {
+        el.style.transform = "translateX(0)";
+      }
+    });
+  });
+}
 
 function openEditMemberRoleModal(group, uid, isAdmin) {
   const modal = openModal(`
