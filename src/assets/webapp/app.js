@@ -631,8 +631,8 @@ function openCreateGroupModal() {
     </div>
   `);
 
-  document.getElementById("joinGroupBtn")
-  .addEventListener("click", openJoinGroupModal);
+ /* document.getElementById("joinGroupBtn")
+  .addEventListener("click", openJoinGroupModal);*/
 
   document.getElementById("createGroupCancel").onclick =
     () => closeModal(modal);
@@ -1435,36 +1435,81 @@ function renderSessionsGroupedByGroup(groups, sessions) {
 
     header.innerHTML = `
       <div class="group-title">
-        👥 ${group.name}
-        <span class="badge ${isAdmin ? "admin" : "member"}">
-          ${isAdmin ? "Admin" : "Membre"}
-        </span>
-      </div>
-
-      <div class="group-actions">
-        ${
-          isAdmin
-            ? `<button class="btn small add-session">+</button>`
-            : ""
-        }
-        ${
-          isAdmin
-            ? `<button class="btn small add-member">👥</button>`
-            : ""
-        }
+        <i class="fas fa-users"></i>
+        <strong>${group.name}</strong>
       </div>
     `;
 
     groupBlock.appendChild(header);
 
-    // ➕ actions
-    header.querySelector(".add-session")?.addEventListener("click", () => {
-      openCreateSessionModal({ groupId: group.id });
-    });
+    const details = document.createElement("div");
+details.className = "group-details hidden";
+details.innerHTML = `
+  <div class="group-description">
+    ${group.description || "Aucune description"}
+  </div>
 
-    header.querySelector(".add-member")?.addEventListener("click", () => {
-      openAddGroupMemberModal(group);
-    });
+  <div class="group-members">
+  <div class="members-header">
+    <h4>Membres</h4>
+
+    ${isAdmin ? `
+      <div class="group-actions">
+        <button class="btn small add-session">+ Campagne</button>
+        <button class="btn small add-member">👥 Ajouter</button>
+      </div>
+    ` : ""}
+  </div>
+
+  <table class="members-table">
+
+      <thead>
+        <tr>
+          <th>Pseudo</th>
+          <th>Email</th>
+          <th>Rôle</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="2">Chargement…</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+`;
+groupBlock.appendChild(details);
+
+
+  details.querySelector(".add-session")?.addEventListener("click", () => {
+  openCreateSessionModal({ groupId: group.id });
+});
+
+details.querySelector(".add-member")?.addEventListener("click", () => {
+  openAddGroupMemberModal(group);
+});
+
+
+    const title = header.querySelector(".group-title");
+
+title.style.cursor = "pointer";
+
+title.addEventListener("click", async () => {
+  const isOpen = !details.classList.contains("hidden");
+
+  // refermer les autres groupes (optionnel mais recommandé)
+  document.querySelectorAll(".group-details").forEach(d => {
+    if (d !== details) d.classList.add("hidden");
+  });
+
+  details.classList.toggle("hidden");
+
+  if (!isOpen) {
+    await loadGroupMembers(group, details);
+  }
+});
+
 
     // 🟨 Groupe vide
     if (sessionsInGroup.length === 0) {
@@ -1472,7 +1517,7 @@ function renderSessionsGroupedByGroup(groups, sessions) {
       empty.className = "empty-state group-empty";
       empty.textContent =
         isAdmin
-          ? "Aucune campagne — vous pouvez en ajouter une"
+          ? "Aucune campagne — vous pouvez en ajouter"
           : "Aucune campagne dans ce groupe";
       groupBlock.appendChild(empty);
     }
@@ -1644,7 +1689,16 @@ function openAddGroupMemberModal(group) {
     <div class="modal-card card">
       <h3>Ajouter un membre</h3>
 
-      <input id="memberEmail" placeholder="Email du membre" />
+     <input id="memberEmail" placeholder="Email du membre" />
+
+      <label style="margin-top:8px;display:block">
+        Rôle :
+        <select id="memberRole">
+          <option value="member">Membre</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+
 
       <hr>
 
@@ -1658,6 +1712,7 @@ function openAddGroupMemberModal(group) {
   modal.querySelector("#addMemberCancel").onclick =
     () => closeModal(modal);
 
+    /*
   modal.querySelector("#addMemberOk").onclick = async () => {
     const email = modal.querySelector("#memberEmail").value.trim().toLowerCase();
 
@@ -1682,6 +1737,45 @@ function openAddGroupMemberModal(group) {
     closeModal(modal);
     showModalFeedback("Membre ajouté ✅", "success");
   };
+  */
+ modal.querySelector("#addMemberOk").onclick = async () => {
+  const email = modal.querySelector("#memberEmail").value.trim().toLowerCase();
+  const role = modal.querySelector("#memberRole").value;
+
+  if (!email) return;
+
+  const userSnap = await getDocs(
+    query(collection(db, "users"), where("email", "==", email))
+  );
+
+  if (userSnap.empty) {
+    showModalFeedback("Utilisateur introuvable", "error");
+    return;
+  }
+
+  const userDoc = userSnap.docs[0];
+  const uid = userDoc.id;
+
+  // 🔒 limite admins
+  if (role === "admin" && group.admins.length >= 3) {
+    showModalFeedback("❌ Maximum 3 administrateurs par groupe", "error");
+    return;
+  }
+
+  const updates = {
+    members: arrayUnion(uid)
+  };
+
+  if (role === "admin") {
+    updates.admins = arrayUnion(uid);
+  }
+
+  await updateDoc(doc(db, "groups", group.id), updates);
+
+  closeModal(modal);
+  showModalFeedback("Membre ajouté ✅", "success");
+};
+
 }
 
 
@@ -2637,7 +2731,7 @@ if (groupSelect && forcedGroupId) {
       // 🔔 Feedback APRÈS ouverture (UX parfaite)
       if (inviteCode) {
         showModalFeedback(
-          `🎟️ Code d’invitation : ${inviteCode}\n` +
+          `Code d’invitation : ${inviteCode}\n` +
           `Partagez-le aux personnes à inviter.`,
           "info",
           5000 // plus long
@@ -3931,6 +4025,129 @@ function hideBottomBar() {
   el.bottomActionBtn.style.display = 'none';
 }
 
+
+async function loadGroupMembers(group, details) {
+  const tbody = details.querySelector(".members-table tbody");
+  tbody.innerHTML = "";
+
+  for (const uid of group.members) {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) continue;
+
+    const user = snap.data();
+    const isAdmin = Array.isArray(group.admins) && group.admins.includes(uid);
+    const canEdit = isGroupAdmin(group);
+    const isSelf = uid === auth.currentUser.uid;
+
+    const tr = document.createElement("tr");
+
+    /*tr.innerHTML = `
+      <td>${user.pseudo || "—"}</td>
+      <td>${user.email || "—"}</td>
+      <td>
+        <span class="badge ${isAdmin ? "admin" : "member"}">
+          ${isAdmin ? "Admin" : "Membre"}
+        </span>
+      </td>
+    `;*/
+
+    tr.innerHTML = `
+  <td>${user.pseudo || "—"}</td>
+  <td>${user.email || "—"}</td>
+  <td>
+    <span class="badge ${isAdmin ? "admin" : "member"}">
+      ${isAdmin ? "Admin" : "Membre"}
+    </span>
+  </td>
+  <td>
+    ${canEdit ? `
+      <button class="btn small edit-role">✏️</button>
+      ${!isSelf ? `<button class="btn small danger remove-member">🗑️</button>` : ""}
+    ` : ""}
+  </td>
+`;
+
+  tr.querySelector(".edit-role")?.addEventListener("click", () => {
+  openEditMemberRoleModal(group, uid, isAdmin);
+});
+
+tr.querySelector(".remove-member")?.addEventListener("click", async () => {
+  openConfirmModal({
+    title: "Supprimer le membre",
+    message: "Ce membre sera retiré du groupe.",
+    danger: true,
+    onConfirm: async () => {
+      await updateDoc(doc(db, "groups", group.id), {
+        members: group.members.filter(id => id !== uid),
+        admins: group.admins.filter(id => id !== uid)
+      });
+
+      showModalFeedback("Membre supprimé ✅", "success");
+    }
+  });
+});
+    tbody.appendChild(tr);
+  }
+
+  if (!tbody.children.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3">Aucun membre</td>
+      </tr>
+    `;
+  }
+
+
+
+
+}
+
+
+function openEditMemberRoleModal(group, uid, isAdmin) {
+  const modal = openModal(`
+    <div class="modal-card card">
+      <h3>Modifier le rôle</h3>
+
+      <select id="editRole">
+        <option value="member">Membre</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <hr>
+
+      <div style="display:flex;gap:8px">
+        <button id="saveRole" class="btn btn-success">Enregistrer</button>
+        <button id="cancelRole" class="btn">Annuler</button>
+      </div>
+    </div>
+  `);
+
+  modal.querySelector("#editRole").value = isAdmin ? "admin" : "member";
+
+  modal.querySelector("#cancelRole").onclick = () => closeModal(modal);
+
+  modal.querySelector("#saveRole").onclick = async () => {
+    const newRole = modal.querySelector("#editRole").value;
+
+    if (newRole === "admin" && group.admins.length >= 3 && !isAdmin) {
+      showModalFeedback("❌ Maximum 3 admins", "error");
+      return;
+    }
+
+    const ref = doc(db, "groups", group.id);
+
+    if (newRole === "admin") {
+      await updateDoc(ref, { admins: arrayUnion(uid) });
+    } else {
+      await updateDoc(ref, {
+        admins: group.admins.filter(id => id !== uid)
+      });
+    }
+
+    closeModal(modal);
+    showModalFeedback("Rôle mis à jour ✅", "success");
+  };
+}
 
 /*
 const consentCheckbox = document.getElementById('consent');
