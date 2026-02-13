@@ -1044,6 +1044,17 @@ function openCreateGroupModal() {
       showModalFeedback("Campagnes invalides", "error");
       return;
     }
+     const names = campaigns.map(c => c.name.toLowerCase());
+const hasDuplicate = names.length !== new Set(names).size;
+
+if (hasDuplicate) {
+  showModalFeedback(
+    "⚠ Deux campagnes ont le même nom. Vérifiez si c’est volontaire.",
+    "info",
+    4000
+  );
+}
+
 
     /* ---- CREATE GROUP ---- */
 
