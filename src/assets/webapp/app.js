@@ -376,7 +376,46 @@ menuDiscussion.onclick = async (e) => {
 
 
 
-  el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
+  //el.newSessionBtn?.addEventListener('click', () => openCreateSessionModal());
+
+  el.newSessionBtn?.addEventListener('click', openCreateMainModal);
+
+  function openCreateMainModal() {
+  const modal = openModal(`
+    <div class="modal-card card" style="max-width:420px">
+      <h3>Créer</h3>
+
+      <div class="create-options">
+
+        <button id="createCampaignBtn" class="btn btn-primary full">
+          📘 Démarrer une nouvelle campagne
+        </button>
+
+        <button id="createGroupBtnModal" class="btn btn-success full">
+          👥 Créer un nouveau groupe
+        </button>
+
+      </div>
+
+      <hr style="margin:16px 0">
+
+      <button id="closeCreateMain" class="btn">Annuler</button>
+    </div>
+  `);
+
+  modal.querySelector("#closeCreateMain").onclick = () =>
+    closeModal(modal);
+
+  modal.querySelector("#createCampaignBtn").onclick = () => {
+    closeModal(modal);
+    openCreateSessionModal();
+  };
+
+  modal.querySelector("#createGroupBtnModal").onclick = () => {
+    closeModal(modal);
+    openCreateGroupModal();
+  };
+}
 
   const menuBtn = document.getElementById('sessionMenuBtn');
   const menu = document.getElementById('sessionMenu');
@@ -608,7 +647,7 @@ function openJoinGroupModal() {
 }
 
 
-
+/*
 function openCreateGroupModal() {
   const modal = openModal(`
     <div class="modal-card card">
@@ -626,8 +665,6 @@ function openCreateGroupModal() {
     </div>
   `);
 
- /* document.getElementById("joinGroupBtn")
-  .addEventListener("click", openJoinGroupModal);*/
 
   document.getElementById("createGroupCancel").onclick =
     () => closeModal(modal);
@@ -655,6 +692,389 @@ function openCreateGroupModal() {
     closeModal(modal);
     showModalFeedback("Groupe créé ✅", "success");
     loadMyGroups();
+  };
+}
+*/
+/*
+function openCreateGroupModal() {
+  const modal = openModal(`
+    <div class="modal-card card" style="max-width:520px">
+      <h3>Créer un nouveau groupe</h3>
+
+      <input id="groupName" placeholder="Nom du groupe" />
+      <textarea id="groupDesc" placeholder="Description (optionnelle)"></textarea>
+
+      <hr>
+
+      <h4>👥 Membres</h4>
+      <div id="membersContainer"></div>
+      <button id="addMemberField" class="btn small">
+        + Ajouter un membre
+      </button>
+
+      <hr>
+
+      <h4>📘 Campagnes</h4>
+      <div id="campaignsContainer"></div>
+      <button id="addCampaignField" class="btn small">
+        + Ajouter une campagne
+      </button>
+
+      <hr style="margin:16px 0">
+
+      <div style="display:flex;gap:8px">
+        <button id="createGroupOk" class="btn btn-success">
+          Créer le groupe
+        </button>
+        <button id="createGroupCancel" class="btn">
+          Annuler
+        </button>
+      </div>
+    </div>
+  `);
+
+  const membersContainer = modal.querySelector("#membersContainer");
+  const campaignsContainer = modal.querySelector("#campaignsContainer");
+
+  // ---- Ajouter champ membre
+  modal.querySelector("#addMemberField").onclick = () => {
+    const div = document.createElement("div");
+    div.className = "group-field";
+    div.innerHTML = `
+      <input type="email" placeholder="Email du membre" class="member-email"/>
+    `;
+    membersContainer.appendChild(div);
+  };
+
+  // ---- Ajouter champ campagne
+  modal.querySelector("#addCampaignField").onclick = () => {
+    const div = document.createElement("div");
+    div.className = "group-field";
+    div.innerHTML = `
+      <input placeholder="Nom de la campagne" class="campaign-name"/>
+    `;
+    campaignsContainer.appendChild(div);
+  };
+
+  // ---- Annuler
+  modal.querySelector("#createGroupCancel").onclick = () =>
+    closeModal(modal);
+
+  // ---- Création complète
+  modal.querySelector("#createGroupOk").onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const name = modal.querySelector("#groupName").value.trim();
+    const desc = modal.querySelector("#groupDesc").value.trim();
+
+    if (!name) {
+      showModalFeedback("Nom requis", "error");
+      return;
+    }
+
+    const memberEmails = [...modal.querySelectorAll(".member-email")]
+      .map(i => i.value.trim().toLowerCase())
+      .filter(Boolean);
+
+    const campaignNames = [...modal.querySelectorAll(".campaign-name")]
+      .map(i => i.value.trim())
+      .filter(Boolean);
+
+    if (memberEmails.length === 0) {
+      showModalFeedback("Ajoutez au moins 1 membre", "error");
+      return;
+    }
+
+    if (campaignNames.length === 0) {
+      showModalFeedback("Ajoutez au moins 1 campagne", "error");
+      return;
+    }
+
+    // 🔍 Récupérer les UID des membres
+    const memberUIDs = [];
+
+    for (const email of memberEmails) {
+      const snap = await getDocs(
+        query(collection(db, "users"), where("email", "==", email))
+      );
+
+      if (!snap.empty) {
+        memberUIDs.push(snap.docs[0].id);
+      }
+    }
+
+    if (memberUIDs.length === 0) {
+      showModalFeedback("Aucun membre valide trouvé", "error");
+      return;
+    }
+
+    // 🔥 Création du groupe
+    const groupRef = await addDoc(collection(db, "groups"), {
+      name,
+      description: desc,
+      createdBy: user.uid,
+      admins: [user.uid],
+      members: [user.uid, ...memberUIDs],
+      inviteCode: Math.random().toString(36).slice(2, 8).toUpperCase(),
+      createdAt: serverTimestamp()
+    });
+
+    // 🔥 Création automatique des campagnes liées au groupe
+    for (const campaignName of campaignNames) {
+      await createSession({
+        name: campaignName,
+        typeCampagne: "coran",
+        isPublic: false,
+        groupId: groupRef.id
+      });
+    }
+
+    closeModal(modal);
+    showModalFeedback("🎉 Groupe et campagnes créés avec succès", "success");
+
+    await loadSessions();
+  };
+}
+*/
+
+function openCreateGroupModal() {
+  const modal = openModal(`
+    <div class="modal-card card" style="max-width:650px">
+      <h3>Créer un nouveau groupe</h3>
+
+      <input id="groupName" placeholder="Nom du groupe" />
+      <textarea id="groupDesc" placeholder="Description (optionnelle)"></textarea>
+
+      <hr>
+
+      <h4>👥 Membres</h4>
+      <div id="membersContainer"></div>
+      <button id="addMemberBtn" class="btn small">
+        + Ajouter un membre
+      </button>
+
+      <hr>
+
+      <h4>📘 Campagnes</h4>
+      <div id="campaignsContainer"></div>
+      <button id="addCampaignBtn" class="btn small">
+        + Ajouter une campagne
+      </button>
+
+      <hr style="margin:16px 0">
+
+      <div style="display:flex;gap:8px">
+        <button id="createGroupOk" class="btn btn-success">
+          Créer le groupe
+        </button>
+        <button id="cancelGroup" class="btn">
+          Annuler
+        </button>
+      </div>
+    </div>
+  `);
+
+  const membersContainer = modal.querySelector("#membersContainer");
+  const campaignsContainer = modal.querySelector("#campaignsContainer");
+
+  /* ===============================
+     👥 AJOUT MEMBRE
+  =============================== */
+
+  modal.querySelector("#addMemberBtn").onclick = () => {
+    const div = document.createElement("div");
+    div.className = "group-member-row";
+
+    div.innerHTML = `
+      <input type="email" placeholder="Email du membre" class="member-email" />
+      <select class="member-role">
+        <option value="member">Membre</option>
+        <option value="admin">Admin</option>
+      </select>
+    `;
+
+    membersContainer.appendChild(div);
+  };
+
+  /* ===============================
+     📘 AJOUT CAMPAGNE
+  =============================== */
+
+  modal.querySelector("#addCampaignBtn").onclick = () => {
+    const div = document.createElement("div");
+    div.className = "group-campaign-row";
+/*
+    div.innerHTML = `
+      <input placeholder="Nom de la campagne" class="campaign-name" />
+
+      <select class="campaign-type">
+        <option value="coran">Coran</option>
+        <option value="zikr">Zikr</option>
+      </select>
+
+      <input type="date" class="campaign-start" />
+      <input type="date" class="campaign-end" />
+
+      <label>
+        <input type="checkbox" class="campaign-public">
+        Publique
+      </label>
+    `;
+    */
+
+    div.innerHTML = `
+  <div class="campaign-card">
+
+    <label>Nom de la campagne</label>
+    <input placeholder="Ex: Lecture Ramadan" class="campaign-name" />
+
+    <label>Type</label>
+    <select class="campaign-type">
+      <option value="coran">📘 Coran</option>
+      <option value="zikr">🧿 Zikr</option>
+    </select>
+
+    <label>Date de début</label>
+    <input type="date" class="campaign-start" />
+
+    <label>Date de fin</label>
+    <input type="date" class="campaign-end" />
+
+    <label class="visibility-toggle">
+      <input type="checkbox" class="campaign-public">
+      Campagne publique
+    </label>
+
+  </div>
+`;
+
+    campaignsContainer.appendChild(div);
+  };
+
+  modal.querySelector("#cancelGroup").onclick = () => closeModal(modal);
+
+  /* ===============================
+     🔥 CRÉATION COMPLÈTE
+  =============================== */
+
+  modal.querySelector("#createGroupOk").onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const name = modal.querySelector("#groupName").value.trim();
+    const desc = modal.querySelector("#groupDesc").value.trim();
+
+    if (!name) {
+      showModalFeedback("Nom requis", "error");
+      return;
+    }
+
+    /* ---- MEMBRES ---- */
+
+    const memberRows = [...modal.querySelectorAll(".group-member-row")];
+
+    if (memberRows.length === 0) {
+      showModalFeedback("Ajoutez au moins 1 membre", "error");
+      return;
+    }
+
+    const members = [];
+    let adminCount = 1; // créateur admin
+
+    for (const row of memberRows) {
+      const email = row.querySelector(".member-email").value.trim().toLowerCase();
+      const role = row.querySelector(".member-role").value;
+
+      if (!email) continue;
+
+      const snap = await getDocs(
+        query(collection(db, "users"), where("email", "==", email))
+      );
+
+      if (snap.empty) continue;
+
+      const uid = snap.docs[0].id;
+
+      if (role === "admin") adminCount++;
+
+      members.push({ uid, role });
+    }
+
+    if (members.length === 0) {
+      showModalFeedback("Aucun membre valide trouvé", "error");
+      return;
+    }
+
+    if (adminCount > 3) {
+      showModalFeedback("Maximum 3 administrateurs", "error");
+      return;
+    }
+
+    /* ---- CAMPAGNES ---- */
+
+    const campaignRows = [...modal.querySelectorAll(".group-campaign-row")];
+
+    if (campaignRows.length === 0) {
+      showModalFeedback("Ajoutez au moins 1 campagne", "error");
+      return;
+    }
+
+    const campaigns = [];
+
+    for (const row of campaignRows) {
+      const cname = row.querySelector(".campaign-name").value.trim();
+      const type = row.querySelector(".campaign-type").value;
+      const start = row.querySelector(".campaign-start").value;
+      const end = row.querySelector(".campaign-end").value;
+      const isPublic = row.querySelector(".campaign-public").checked;
+
+      if (!cname || !start || !end) continue;
+
+      campaigns.push({
+        name: cname,
+        typeCampagne: type,
+        startDate: start,
+        endDate: end,
+        isPublic
+      });
+    }
+
+    if (campaigns.length === 0) {
+      showModalFeedback("Campagnes invalides", "error");
+      return;
+    }
+
+    /* ---- CREATE GROUP ---- */
+
+    const groupRef = await addDoc(collection(db, "groups"), {
+      name,
+      description: desc,
+      createdBy: user.uid,
+      admins: [
+        user.uid,
+        ...members.filter(m => m.role === "admin").map(m => m.uid)
+      ],
+      members: [
+        user.uid,
+        ...members.map(m => m.uid)
+      ],
+      inviteCode: Math.random().toString(36).slice(2, 8).toUpperCase(),
+      createdAt: serverTimestamp()
+    });
+
+    /* ---- CREATE CAMPAIGNS ---- */
+
+    for (const camp of campaigns) {
+      await createSession({
+        ...camp,
+        groupId: groupRef.id
+      });
+    }
+
+    closeModal(modal);
+    showModalFeedback("🎉 Groupe créé avec campagnes et membres", "success");
+    await loadSessions();
   };
 }
 
@@ -1408,9 +1828,7 @@ function renderSingleSessionRow(session) {
 
 function renderSessionsGroupedByGroup(groups, sessions) {
   const container = document.getElementById("sessions");
-  container.innerHTML = `<button id="createGroupBtn" class="btn btn-success">
-            Créer un groupe
-          </button>`;
+  container.innerHTML = ``;
 
   if (!groups.length) {
     container.innerHTML =
@@ -1527,31 +1945,11 @@ details.querySelector(".add-member")?.addEventListener("click", () => {
   openAddGroupMemberModal(group);
 });
 
-const createGroupBtn = document.getElementById("createGroupBtn");
 
-createGroupBtn?.addEventListener("click", () => {
-  openCreateGroupModal();
-});
     const title = header.querySelector(".group-title");
 
 title.style.cursor = "pointer";
-/*
-title.addEventListener("click", async () => {
-  const isOpen = !details.classList.contains("hidden");
 
-  // refermer les autres groupes (optionnel mais recommandé)
-  document.querySelectorAll(".group-details").forEach(d => {
-    if (d !== details) d.classList.add("hidden");
-  });
-
-  details.classList.toggle("hidden");
-
-  if (!isOpen) {
-    await loadGroupMembers(group, details);
-    enable_Swipe();
-  }
-});
-*/
 
 title.addEventListener("click", async () => {
   const isOpen = !details.classList.contains("hidden");
@@ -3520,11 +3918,51 @@ function openInviteCodeModal() {
 }
 
 /* ---------- Ouverture depuis le bouton ---------- */
+/*
 
 document.getElementById("joinWithCodeBtn")
   .addEventListener("click", openInviteCodeModal);
+*/
 
+  document.getElementById("joinWithCodeBtn")
+  .addEventListener("click", openJoinMainModal);
 
+function openJoinMainModal() {
+  const modal = openModal(`
+    <div class="modal-card card" style="max-width:420px">
+      <h3>Rejoindre</h3>
+
+      <div class="join-options">
+
+        <button id="joinCampaignBtn" class="btn btn-primary full">
+          🔐 Rejoindre une campagne privée
+        </button>
+
+        <button id="joinGroupBtnModal" class="btn btn-success full">
+          👥 Rejoindre un groupe
+        </button>
+
+      </div>
+
+      <hr style="margin:16px 0">
+
+      <button id="closeJoinMain" class="btn">Annuler</button>
+    </div>
+  `);
+
+  modal.querySelector("#closeJoinMain").onclick = () =>
+    closeModal(modal);
+
+  modal.querySelector("#joinCampaignBtn").onclick = () => {
+    closeModal(modal);
+    openInviteCodeModal(); // 🔐 déjà existant
+  };
+
+  modal.querySelector("#joinGroupBtnModal").onclick = () => {
+    closeModal(modal);
+    openJoinGroupModal(); // 👥 déjà existant
+  };
+}
 
 searchInput.addEventListener("input", () => {
   const term = searchInput.value.toLowerCase();
@@ -4136,12 +4574,12 @@ const canRemove =
        
       ${canEdit ? `
           <div class="swipe-action swipe-left">
-            <button class="edit-role">✏️</button>
+            <button class="edit-role"><i class="fa-solid fa-pen"></i></button>
           </div>
       ` : ""}
       ${canRemove ? `
          <div class="swipe-action swipe-right">
-           <button class="remove-member">🗑</button>
+           <button class="remove-member"><i class="fa-solid fa-trash"></i></button>
         </div>
 ` : ""}
         <div class="swipe-content">

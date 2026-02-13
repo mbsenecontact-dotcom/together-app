@@ -692,22 +692,15 @@ main {
 .bottom-actions {
   pointer-events: auto;
   touch-action: manipulation;
-
   position: fixed;
+  bottom: 0; /* ou 8–16px bottom: env(safe-area-inset-bottom); */
+  padding-bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
-
-  bottom: 0;
-  
   display: flex;
   background: #fff;
   border-top: 1px solid #e5e5e5;
   height: var(--bottom-bar-height);
-
-  /* ✅ ESPACE DE SÉCURITÉ ANDROID */
-  padding-bottom: max(env(safe-area-inset-bottom), 14px);
-
-
   z-index: var(--z-bottom-bar);
 }
 
@@ -2942,4 +2935,72 @@ body.modal-open .bottom-actions {
   background: white;
   transition: transform 0.3s ease;
   z-index: 2;
+}
+
+
+.full {
+  width: 100%;
+}
+
+.join-options,
+.create-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-field {
+  margin-bottom: 8px;
+}
+
+.group-field input {
+  width: 100%;
+}
+
+.group-member-row,
+.group-campaign-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.group-member-row input,
+.group-campaign-row input,
+.group-campaign-row select {
+  flex: 1;
+}
+
+
+
+.campaign-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  background: #fafafa;
+}
+
+.campaign-card label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.campaign-card input,
+.campaign-card select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.visibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
 }
